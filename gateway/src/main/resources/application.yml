@@ -1,0 +1,55 @@
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**, /api/user/**, /api/favorite/**
+
+        - id: anime-service
+          uri: lb://anime-service
+          predicates:
+            - Path=/api/anime/**, /api/recommend/**, /api/search/**
+
+        - id: video-service
+          uri: lb://video-service
+          predicates:
+            - Path=/api/video/**
+
+        - id: danmaku-service
+          uri: lb://danmaku-service
+          predicates:
+            - Path=/api/danmaku/**, /ws/**
+
+        - id: crawler-service
+          uri: lb://crawler-service
+          predicates:
+            - Path=/crawler/**
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+
+  # Redis（限流过滤器使用）
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+logging:
+  level:
+    com.anime: debug

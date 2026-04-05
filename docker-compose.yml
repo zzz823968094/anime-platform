@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: anime-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: animedb
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - anime-mysql-data:/var/lib/mysql
+      - ./animedb_backup.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: anime-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: anime-nacos
+    environment:
+      - MODE=standalone
+      - PREFER_HOST_MODE=hostname
+      - JVM_XMS=256m
+      - JVM_XMX=256m
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    restart: unless-stopped
+
+volumes:
+  anime-mysql-data:
