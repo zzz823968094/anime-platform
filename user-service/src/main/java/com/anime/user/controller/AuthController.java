@@ -83,7 +83,7 @@ public class AuthController {
         return Result.ok(Map.of("access_token", token));
     }
 
-    @GetMapping("/api/auth/login")
+    @PostMapping("/api/auth/login")
     public Result<?> login(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
