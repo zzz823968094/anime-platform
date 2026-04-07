@@ -42,7 +42,6 @@ for service in anime-service user-service video-service danmaku-service gateway;
     fi
 done
 
-cd deploy
 
 # 设置环境变量
 export MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-anime123}
