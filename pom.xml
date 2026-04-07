@@ -18,13 +18,6 @@
         <module>video-service</module>
         <module>danmaku-service</module>
         <module>crawler-service</module>
-        <module>common</module>
-        <module>gateway</module>
-        <module>user-service</module>
-        <module>anime-service</module>
-        <module>video-service</module>
-        <module>danmaku-service</module>
-        <module>crawler-service</module>
     </modules>
 
     <properties>
