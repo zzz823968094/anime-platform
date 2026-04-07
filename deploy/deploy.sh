@@ -11,9 +11,9 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# 检查docker-compose是否安装
-if ! command -v docker-compose &> /dev/null; then
-    echo "错误：docker-compose未安装，请先安装docker-compose"
+# 检查docker compose是否安装
+if ! command -v docker compose &> /dev/null; then
+    echo "错误：docker compose未安装，请先安装docker compose"
     exit 1
 fi
 
@@ -49,11 +49,11 @@ export TAG=${TAG:-latest}
 
 # 停止并删除现有容器
 echo "步骤2: 清理现有容器..."
-docker-compose -f docker-compose.prod.yml down --remove-orphans
+docker compose -f docker-compose.prod.yml down --remove-orphans
 
 # 启动所有服务
 echo "步骤3: 启动所有服务..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # 等待服务启动
 echo "步骤4: 等待服务启动..."
@@ -61,7 +61,7 @@ sleep 30
 
 # 检查容器状态
 echo "步骤5: 检查容器状态..."
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 echo "=== 部署完成 ==="
 echo "服务地址:"
