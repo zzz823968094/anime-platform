@@ -19,6 +19,7 @@ fi
 
 # 构建服务（如果需要）
 echo "步骤1: 检查并构建服务JAR包..."
+mkdir -p ../common/target
 mkdir -p ../anime-service/target
 mkdir -p ../user-service/target
 mkdir -p ../video-service/target
