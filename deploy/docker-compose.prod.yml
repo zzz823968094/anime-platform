@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: anime-mysql-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-anime123}
+      MYSQL_DATABASE: animedb
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - anime-mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+    networks:
+      - anime-network
+
+  # Redis缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: anime-redis-prod
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - anime-network
+
+  # Nacos注册中心
+  nacos:
+    image: nacos/nacos-server:v2.2.3-slim
+    container_name: anime-nacos-prod
+    environment:
+      - MODE=standalone
+      - PREFER_HOST_MODE=hostname
+      - JVM_XMS=256m
+      - JVM_XMX=256m
+      - NACOS_AUTH_ENABLE=true
+      - NACOSTOKEN=admin
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    restart: unless-stopped
+    networks:
+      - anime-network
+
+  # 网关服务
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.gateway
+    image: anime-gateway:${TAG:-latest}
+    container_name: anime-gateway-prod
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_SERVER_ADDR=nacos:8848
+      - REDIS_HOST=redis
+      - MYSQL_HOST=mysql
+    ports:
+      - "8080:8080"
+    depends_on:
+      - nacos
+      - redis
+      - mysql
+    restart: unless-stopped
+    networks:
+      - anime-network
+
+volumes:
+  anime-mysql-data:
+
+networks:
+  anime-network:
+    driver: bridge
