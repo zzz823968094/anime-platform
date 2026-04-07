@@ -1,77 +1,154 @@
-version: '3.8'
-
 services:
-  # 数据库服务
   mysql:
     image: mysql:8.0
-    container_name: anime-mysql-prod
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-anime123}
-      MYSQL_DATABASE: animedb
-      TZ: Asia/Shanghai
+    container_name: anime-mysql
     ports:
       - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-anime_platform}
     volumes:
-      - anime-mysql-data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    restart: unless-stopped
+      - ../data/mysql:/var/lib/mysql
+    restart: always
     networks:
       - anime-network
-
-  # Redis缓存服务
   redis:
-    image: redis:7-alpine
-    container_name: anime-redis-prod
+    image: redis:alpine
+    container_name: anime-redis
     ports:
       - "6379:6379"
-    restart: unless-stopped
+    volumes:
+      - ../data/redis:/data
+    restart: always
     networks:
       - anime-network
 
-  # Nacos注册中心
   nacos:
-    image: nacos/nacos-server:v2.2.3-slim
-    container_name: anime-nacos-prod
-    environment:
-      - MODE=standalone
-      - PREFER_HOST_MODE=hostname
-      - JVM_XMS=256m
-      - JVM_XMX=256m
-      - NACOS_AUTH_ENABLE=true
-      - NACOSTOKEN=admin
+    image: nacos/nacos-server:v2.3.0
+    container_name: anime-nacos
     ports:
       - "8848:8848"
       - "9848:9848"
-      - "9849:9849"
-    restart: unless-stopped
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+    volumes:
+      - ../data/nacos:/home/nacos/data
+    restart: always
     networks:
       - anime-network
 
-  # 网关服务
   gateway:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.gateway
+    build: ../gateway
     image: anime-gateway:${TAG:-latest}
-    container_name: anime-gateway-prod
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - NACOS_SERVER_ADDR=nacos:8848
-      - REDIS_HOST=redis
-      - MYSQL_HOST=mysql
+    container_name: anime-gateway
     ports:
       - "8080:8080"
     depends_on:
       - nacos
-      - redis
       - mysql
-    restart: unless-stopped
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_SERVER_ADDR=nacos:8848
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=anime_platform
+      - DB_USERNAME=root
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: always
     networks:
       - anime-network
 
-volumes:
-  anime-mysql-data:
+  anime-service:
+    build: ../anime-service
+    image: anime-service:${TAG:-latest}
+    container_name: anime-service
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_SERVER_ADDR=nacos:8848
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=anime_platform
+      - DB_USERNAME=root
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: always
+    networks:
+      - anime-network
+
+  user-service:
+    build: ../user-service
+    image: user-service:${TAG:-latest}
+    container_name: user-service
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_SERVER_ADDR=nacos:8848
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=anime_platform
+      - DB_USERNAME=root
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: always
+    networks:
+      - anime-network
+
+  video-service:
+    build: ../video-service
+    image: video-service:${TAG:-latest}
+    container_name: video-service
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_SERVER_ADDR=nacos:8848
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=anime_platform
+      - DB_USERNAME=root
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: always
+    networks:
+      - anime-network
+
+  danmaku-service:
+    build: ../danmaku-service
+    image: danmaku-service:${TAG:-latest}
+    container_name: danmaku-service
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_SERVER_ADDR=nacos:8848
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=anime_platform
+      - DB_USERNAME=root
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: always
+    networks:
+      - anime-network
 
 networks:
   anime-network:
