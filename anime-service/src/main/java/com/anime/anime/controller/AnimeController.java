@@ -2,7 +2,9 @@ package com.anime.anime.controller;
 
 import com.anime.anime.entity.Anime;
 import com.anime.anime.entity.SearchLog;
+import com.anime.anime.entity.VisitLog;
 import com.anime.anime.mapper.SearchLogMapper;
+import com.anime.anime.mapper.VisitLogMapper;
 import com.anime.anime.service.AnimeService;
 import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -22,6 +24,7 @@ public class AnimeController {
 
     private final AnimeService animeService;
     private final SearchLogMapper searchLogMapper;
+    private final VisitLogMapper visitLogMapper;
 
     @GetMapping("/list")
     public Result<?> list(
@@ -175,6 +178,46 @@ public class AnimeController {
                         .last("LIMIT " + limit)
         );
         return Result.ok(list);
+    }
+
+    /**
+     * 访问上报（前端每次路由跳转时调用）
+     * 同一 IP 同一页面同一天只记录一次，防刷
+     */
+    @PostMapping("/visit")
+    public Result<?> reportVisit(@RequestBody java.util.Map<String, String> body,
+                                 @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                                 HttpServletRequest request) {
+        String page = body.get("page");
+        if (page == null || page.isBlank()) return Result.ok("skip");
+
+        String ip = getClientIp(request);
+
+        // 同一 IP 同一页面今天已上报过则跳过
+        if (visitLogMapper.checkDuplicate(ip, page) > 0) return Result.ok("dup");
+
+        VisitLog log = new VisitLog();
+        log.setPage(page);
+        log.setIp(ip);
+        log.setUserId(userId);
+        log.setVisitDate(java.time.LocalDate.now());
+        log.setCreatedAt(java.time.LocalDateTime.now());
+        visitLogMapper.insert(log);
+        return Result.ok("ok");
+    }
+
+    /**
+     * 访问统计（管理端）
+     * 返回今日UV、今日PV、最近7天趋势、热门页面
+     */
+    @GetMapping("/visit/stats")
+    public Result<?> visitStats() {
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("todayUV",  visitLogMapper.todayUV());
+        data.put("todayPV",  visitLogMapper.todayPV());
+        data.put("trend",    visitLogMapper.dailyUV(7));
+        data.put("hotPages", visitLogMapper.hotPages());
+        return Result.ok(data);
     }
 
     private String getClientIp(HttpServletRequest request) {
