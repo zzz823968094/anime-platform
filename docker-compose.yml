@@ -18,14 +18,14 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: redis:alpine
     container_name: anime-redis
     ports:
       - "6379:6379"
     restart: unless-stopped
 
   nacos:
-    image: nacos/nacos-server:v2.2.3
+    image: nacos-registry.cn-hangzhou.cr.aliyuncs.com/nacos/nacos-server:v2.3.2
     container_name: anime-nacos
     environment:
       - MODE=standalone
