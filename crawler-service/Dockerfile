@@ -7,7 +7,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 WORKDIR /app
 
 # 复制JAR文件
-COPY crawler-service/target/*.jar app.jar
+COPY target/*.jar app.jar
 
 # 暴露端口
 EXPOSE 8085
