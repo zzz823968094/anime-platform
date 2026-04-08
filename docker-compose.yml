@@ -1,5 +1,8 @@
-services:
+# docker-compose.yml
+# 适用于 Docker Compose V2 (版本 3.8+，建议直接省略 version)
+# 注意：文件名可以是 docker-compose.yml 或 compose.yml
 
+services:
   mysql:
     image: mysql:8.0
     container_name: anime-mysql
@@ -19,6 +22,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - anime-network
 
   redis:
     image: redis:alpine
@@ -31,9 +36,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - anime-network
 
   nacos:
-    image: nacos-registry.cn-hangzhou.cr.aliyuncs.com/nacos/nacos-server:v2.3.2
+    image: nacos/nacos-server:latest
     container_name: anime-nacos
     environment:
       - MODE=standalone
@@ -49,11 +56,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - anime-network
 
   gateway:
     build:
-      context: .
-      dockerfile: gateway/Dockerfile
+      context: ./gateway
     container_name: anime-gateway
     ports:
       - "8080:8080"
@@ -65,11 +73,12 @@ services:
       - nacos
       - redis
     restart: unless-stopped
+    networks:
+      - anime-network
 
   anime-service:
     build:
-      context: .
-      dockerfile: anime-service/Dockerfile
+      context: ./anime-service
     container_name: anime-anime-service
     ports:
       - "8082:8082"
@@ -85,11 +94,12 @@ services:
       - mysql
       - redis
     restart: unless-stopped
+    networks:
+      - anime-network
 
   user-service:
     build:
-      context: .
-      dockerfile: user-service/Dockerfile
+      context: ./user-service
     container_name: anime-user-service
     ports:
       - "8081:8081"
@@ -105,11 +115,12 @@ services:
       - mysql
       - redis
     restart: unless-stopped
+    networks:
+      - anime-network
 
   video-service:
     build:
-      context: .
-      dockerfile: video-service/Dockerfile
+      context: ./video-service
     container_name: anime-video-service
     ports:
       - "8083:8083"
@@ -125,11 +136,12 @@ services:
       - mysql
       - redis
     restart: unless-stopped
+    networks:
+      - anime-network
 
   danmaku-service:
     build:
-      context: .
-      dockerfile: danmaku-service/Dockerfile
+      context: ./danmaku-service
     container_name: anime-danmaku-service
     ports:
       - "8084:8084"
@@ -145,11 +157,12 @@ services:
       - mysql
       - redis
     restart: unless-stopped
+    networks:
+      - anime-network
 
   crawler-service:
     build:
-      context: .
-      dockerfile: crawler-service/Dockerfile
+      context: ./crawler-service
     container_name: anime-crawler-service
     ports:
       - "8085:8085"
@@ -165,6 +178,12 @@ services:
       - mysql
       - redis
     restart: unless-stopped
+    networks:
+      - anime-network
 
 volumes:
   anime-mysql-data:
+
+networks:
+  anime-network:
+    driver: bridge

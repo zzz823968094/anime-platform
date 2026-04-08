@@ -16,10 +16,10 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 配置变量
-GIT_REPO="https://gitee.com/crazy-clown/anime-platform.git"  # 替换为你的Git仓库地址
-PROJECT_DIR="/opt/anime-platform"
-LOG_FILE="/var/log/anime-platform-deploy.log"
-BACKUP_DIR="/opt/anime-platform-backup"
+GIT_REPO="https://github.com/zzz823968094/anime-platform.git"  # 替换为你的Git仓库地址
+PROJECT_DIR="/root/anime-platform"
+LOG_FILE="/root/log/anime-platform-deploy.log"
+BACKUP_DIR="/root/anime-platform-backup"
 
 # 日志函数
 log() {
@@ -50,7 +50,7 @@ print_banner() {
 
 # 检查是否为root用户
 check_root() {
-    if [ "$EUID" -ne 0 ]; then 
+    if [ "$EUID" -ne 0 ]; then
         error "请使用root用户或sudo运行此脚本"
         echo "示例: sudo bash deploy.sh"
         exit 1
@@ -60,7 +60,7 @@ check_root() {
 # 检查系统要求
 check_system() {
     log "检查系统要求..."
-    
+
     # 检查操作系统
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -71,7 +71,7 @@ check_system() {
         error "无法检测操作系统版本"
         exit 1
     fi
-    
+
     # 检查架构
     ARCH=$(uname -m)
     log "系统架构: $ARCH"
@@ -80,10 +80,10 @@ check_system() {
 # 安装依赖
 install_dependencies() {
     log "开始安装依赖..."
-    
+
     # 更新包列表
     apt-get update -y
-    
+
     # 安装必要工具
     apt-get install -y \
         git \
@@ -95,11 +95,11 @@ install_dependencies() {
         docker.io \
         docker compose \
         net-tools
-    
+
     # 启动并启用Docker
     systemctl start docker
     systemctl enable docker
-    
+
     success "依赖安装完成"
 }
 
@@ -109,12 +109,12 @@ check_docker() {
         error "Docker未安装，正在安装..."
         install_dependencies
     fi
-    
+
     if ! command -v docker compose &> /dev/null; then
         error "Docker Compose未安装，正在安装..."
         install_dependencies
     fi
-    
+
     success "Docker版本: $(docker --version)"
     success "Docker Compose版本: $(docker compose --version)"
 }
@@ -125,12 +125,12 @@ check_java_maven() {
         error "Java未安装，正在安装..."
         install_dependencies
     fi
-    
+
     if ! command -v mvn &> /dev/null; then
         error "Maven未安装，正在安装..."
         install_dependencies
     fi
-    
+
     success "Java版本: $(java -version 2>&1 | head -n 1)"
     success "Maven版本: $(mvn -version 2>&1 | head -n 1)"
 }
@@ -138,7 +138,7 @@ check_java_maven() {
 # 从Git拉取代码
 pull_code() {
     log "开始从Git拉取代码..."
-    
+
     if [ -d "$PROJECT_DIR/.git" ]; then
         # 已存在，执行pull
         log "项目目录已存在，执行git pull..."
@@ -155,7 +155,7 @@ pull_code() {
         mkdir -p "$(dirname $PROJECT_DIR)"
         git clone "$GIT_REPO" "$PROJECT_DIR"
     fi
-    
+
     cd "$PROJECT_DIR"
     success "代码拉取完成"
     log "当前分支: $(git branch --show-current)"
@@ -177,7 +177,7 @@ backup_current() {
 stop_containers() {
     log "停止旧容器..."
     cd "$PROJECT_DIR"
-    
+
     if [ -f docker compose.yml ]; then
         docker compose down 2>/dev/null || true
         success "旧容器已停止"
@@ -190,15 +190,15 @@ stop_containers() {
 build_project() {
     log "开始构建项目..."
     cd "$PROJECT_DIR"
-    
+
     # 清理旧构建
     log "清理旧的构建文件..."
     mvn clean 2>/dev/null || true
-    
+
     # 编译打包（跳过测试以加快速度）
     log "使用Maven编译打包（跳过测试）..."
     mvn package -DskipTests -B
-    
+
     if [ $? -eq 0 ]; then
         success "项目构建成功"
     else
@@ -211,10 +211,10 @@ build_project() {
 build_docker_images() {
     log "开始构建Docker镜像..."
     cd "$PROJECT_DIR"
-    
+
     # 构建所有服务的Docker镜像
     docker compose build
-    
+
     if [ $? -eq 0 ]; then
         success "Docker镜像构建完成"
     else
@@ -227,17 +227,17 @@ build_docker_images() {
 start_services() {
     log "启动所有服务..."
     cd "$PROJECT_DIR"
-    
+
     # 使用docker compose启动
     docker compose up -d
-    
+
     if [ $? -eq 0 ]; then
         success "所有服务已启动"
     else
         error "服务启动失败"
         exit 1
     fi
-    
+
     # 等待服务启动
     log "等待服务启动（30秒）..."
     sleep 30
@@ -247,17 +247,17 @@ start_services() {
 check_services() {
     log "检查服务运行状态..."
     cd "$PROJECT_DIR"
-    
+
     echo ""
     echo -e "${BLUE}=========================================="
     echo "   服务运行状态"
     echo "==========================================${NC}"
-    
+
     docker compose ps
-    
+
     echo ""
     log "检查各服务端口..."
-    
+
     # 检查关键端口
     declare -A PORTS
     PORTS=(
@@ -270,7 +270,7 @@ check_services() {
         ["Redis"]="6379"
         ["Nacos"]="8848"
     )
-    
+
     for service in "${!PORTS[@]}"; do
         port=${PORTS[$service]}
         if netstat -tuln 2>/dev/null | grep -q ":$port " || ss -tuln 2>/dev/null | grep -q ":$port "; then
@@ -279,7 +279,7 @@ check_services() {
             warning "$service (端口: $port) - 未检测到"
         fi
     done
-    
+
     echo ""
 }
 
@@ -290,18 +290,18 @@ show_deploy_info() {
     echo "   部署完成！"
     echo "=========================================="
     echo -e "${NC}"
-    
+
     echo "项目目录: $PROJECT_DIR"
     echo "日志文件: $LOG_FILE"
     echo "备份目录: $BACKUP_DIR"
     echo ""
-    
+
     echo -e "${YELLOW}服务访问地址:${NC}"
     echo "  API网关:        http://$(curl -s ifconfig.me 2>/dev/null || echo '服务器IP'):8080"
     echo "  Nacos控制台:    http://$(curl -s ifconfig.me 2>/dev/null || echo '服务器IP'):8848/nacos"
     echo "                  默认账号: nacos / nacos"
     echo ""
-    
+
     echo -e "${YELLOW}常用命令:${NC}"
     echo "  查看服务状态:   cd $PROJECT_DIR && docker compose ps"
     echo "  查看服务日志:   cd $PROJECT_DIR && docker compose logs -f [服务名]"
@@ -309,7 +309,7 @@ show_deploy_info() {
     echo "  重启服务:       cd $PROJECT_DIR && docker compose restart [服务名]"
     echo "  重新部署:       sudo bash deploy.sh"
     echo ""
-    
+
     echo -e "${YELLOW}Docker容器列表:${NC}"
     echo "  anime-gateway         - API网关 (8080)"
     echo "  anime-service         - 动漫服务 (8081)"
@@ -325,42 +325,42 @@ show_deploy_info() {
 # 主函数
 main() {
     print_banner
-    
+
     log "========== 开始部署 =========="
-    
+
     # 1. 检查root权限
     check_root
-    
+
     # 2. 检查系统
     check_system
-    
+
     # 3. 检查依赖
     check_docker
     check_java_maven
-    
+
     # 4. 拉取代码
     pull_code
-    
+
     # 5. 停止旧服务
     stop_containers
-    
+
     # 6. 构建项目
     build_project
-    
+
     # 7. 构建Docker镜像
     build_docker_images
-    
+
     # 8. 启动服务
     start_services
-    
+
     # 9. 检查服务状态
     check_services
-    
+
     # 10. 显示部署信息
     show_deploy_info
-    
+
     log "========== 部署完成 =========="
-    
+
     success "部署成功！如有问题，请查看日志: tail -f $LOG_FILE"
 }
 
