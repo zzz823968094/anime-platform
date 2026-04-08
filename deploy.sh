@@ -93,7 +93,7 @@ install_dependencies() {
         openjdk-17-jdk \
         maven \
         docker.io \
-        docker-compose \
+        docker compose \
         net-tools
     
     # 启动并启用Docker
@@ -110,13 +110,13 @@ check_docker() {
         install_dependencies
     fi
     
-    if ! command -v docker-compose &> /dev/null; then
+    if ! command -v docker compose &> /dev/null; then
         error "Docker Compose未安装，正在安装..."
         install_dependencies
     fi
     
     success "Docker版本: $(docker --version)"
-    success "Docker Compose版本: $(docker-compose --version)"
+    success "Docker Compose版本: $(docker compose --version)"
 }
 
 # 检查Java和Maven
@@ -178,11 +178,11 @@ stop_containers() {
     log "停止旧容器..."
     cd "$PROJECT_DIR"
     
-    if [ -f docker-compose.yml ]; then
-        docker-compose down 2>/dev/null || true
+    if [ -f docker compose.yml ]; then
+        docker compose down 2>/dev/null || true
         success "旧容器已停止"
     else
-        warning "未找到docker-compose.yml"
+        warning "未找到docker compose.yml"
     fi
 }
 
@@ -213,7 +213,7 @@ build_docker_images() {
     cd "$PROJECT_DIR"
     
     # 构建所有服务的Docker镜像
-    docker-compose build
+    docker compose build
     
     if [ $? -eq 0 ]; then
         success "Docker镜像构建完成"
@@ -228,8 +228,8 @@ start_services() {
     log "启动所有服务..."
     cd "$PROJECT_DIR"
     
-    # 使用docker-compose启动
-    docker-compose up -d
+    # 使用docker compose启动
+    docker compose up -d
     
     if [ $? -eq 0 ]; then
         success "所有服务已启动"
@@ -253,7 +253,7 @@ check_services() {
     echo "   服务运行状态"
     echo "==========================================${NC}"
     
-    docker-compose ps
+    docker compose ps
     
     echo ""
     log "检查各服务端口..."
@@ -303,10 +303,10 @@ show_deploy_info() {
     echo ""
     
     echo -e "${YELLOW}常用命令:${NC}"
-    echo "  查看服务状态:   cd $PROJECT_DIR && docker-compose ps"
-    echo "  查看服务日志:   cd $PROJECT_DIR && docker-compose logs -f [服务名]"
-    echo "  停止所有服务:   cd $PROJECT_DIR && docker-compose down"
-    echo "  重启服务:       cd $PROJECT_DIR && docker-compose restart [服务名]"
+    echo "  查看服务状态:   cd $PROJECT_DIR && docker compose ps"
+    echo "  查看服务日志:   cd $PROJECT_DIR && docker compose logs -f [服务名]"
+    echo "  停止所有服务:   cd $PROJECT_DIR && docker compose down"
+    echo "  重启服务:       cd $PROJECT_DIR && docker compose restart [服务名]"
     echo "  重新部署:       sudo bash deploy.sh"
     echo ""
     
