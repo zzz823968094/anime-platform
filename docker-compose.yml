@@ -16,6 +16,11 @@ services:
       - ./animedb_backup.sql:/docker-entrypoint-initdb.d/init.sql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:alpine
@@ -23,6 +28,11 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   nacos:
     image: nacos-registry.cn-hangzhou.cr.aliyuncs.com/nacos/nacos-server:v2.3.2
@@ -35,6 +45,127 @@ services:
     ports:
       - "8848:8848"
       - "9848:9848"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: anime-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      - nacos
+      - redis
+    restart: unless-stopped
+
+  anime-service:
+    build:
+      context: .
+      dockerfile: anime-service/Dockerfile
+    container_name: anime-anime-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: anime-user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+    restart: unless-stopped
+
+  video-service:
+    build:
+      context: .
+      dockerfile: video-service/Dockerfile
+    container_name: anime-video-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+    restart: unless-stopped
+
+  danmaku-service:
+    build:
+      context: .
+      dockerfile: danmaku-service/Dockerfile
+    container_name: anime-danmaku-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+    restart: unless-stopped
+
+  crawler-service:
+    build:
+      context: .
+      dockerfile: crawler-service/Dockerfile
+    container_name: anime-crawler-service
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      - nacos
+      - mysql
+      - redis
     restart: unless-stopped
 
 volumes:
