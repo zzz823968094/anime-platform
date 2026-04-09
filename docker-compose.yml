@@ -3,41 +3,10 @@
 # 注意：文件名可以是 docker-compose.yml 或 compose.yml
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: anime-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_DATABASE: animedb
-      TZ: Asia/Shanghai
-    ports:
-      - "3306:3306"
-    volumes:
-      - anime-mysql-data:/var/lib/mysql
-      - ./animedb.sql:/docker-entrypoint-initdb.d/init.sql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - anime-network
-
-  redis:
-    image: redis:alpine
-    container_name: anime-redis
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - anime-network
+  # 注意：MySQL 和 Redis 已在服务器外部部署，无需在此启动
+  # 请确保：
+  # 1. MySQL 和 Redis 允许 Docker 容器访问（监听 0.0.0.0 或通过 host.docker.internal 访问）
+  # 2. 如需要，在服务器防火墙开放 3306 和 6379 端口
 
   nacos:
     image: nacos/nacos-server:latest
@@ -67,11 +36,12 @@ services:
       - "8080:8080"
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
-      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_HOST=host.docker.internal
       - SPRING_DATA_REDIS_PORT=6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - nacos
-      - redis
     restart: unless-stopped
     networks:
       - anime-network
@@ -84,15 +54,15 @@ services:
       - "8082:8082"
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
-      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_HOST=host.docker.internal
       - SPRING_DATA_REDIS_PORT=6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - nacos
-      - mysql
-      - redis
     restart: unless-stopped
     networks:
       - anime-network
@@ -105,15 +75,15 @@ services:
       - "8081:8081"
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
-      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_HOST=host.docker.internal
       - SPRING_DATA_REDIS_PORT=6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - nacos
-      - mysql
-      - redis
     restart: unless-stopped
     networks:
       - anime-network
@@ -126,15 +96,15 @@ services:
       - "8083:8083"
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
-      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_HOST=host.docker.internal
       - SPRING_DATA_REDIS_PORT=6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - nacos
-      - mysql
-      - redis
     restart: unless-stopped
     networks:
       - anime-network
@@ -147,15 +117,15 @@ services:
       - "8084:8084"
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
-      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_HOST=host.docker.internal
       - SPRING_DATA_REDIS_PORT=6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - nacos
-      - mysql
-      - redis
     restart: unless-stopped
     networks:
       - anime-network
@@ -168,21 +138,18 @@ services:
       - "8085:8085"
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR=nacos:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
-      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_HOST=host.docker.internal
       - SPRING_DATA_REDIS_PORT=6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - nacos
-      - mysql
-      - redis
     restart: unless-stopped
     networks:
       - anime-network
-
-volumes:
-  anime-mysql-data:
 
 networks:
   anime-network:
