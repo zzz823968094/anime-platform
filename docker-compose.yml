@@ -3,30 +3,10 @@
 # 注意：文件名可以是 docker-compose.yml 或 compose.yml
 
 services:
-  # 注意：MySQL 和 Redis 已在服务器外部部署，无需在此启动
+  # 注意：MySQL、Redis、Nacos 已在服务器外部部署，无需在此启动
   # 请确保：
-  # 1. MySQL 和 Redis 允许 Docker 容器访问（监听 0.0.0.0 或通过 host.docker.internal 访问）
-  # 2. 如需要，在服务器防火墙开放 3306 和 6379 端口
-
-  nacos:
-    image: nacos/nacos-server:latest
-    container_name: anime-nacos
-    environment:
-      - MODE=standalone
-      - PREFER_HOST_MODE=hostname
-      - JVM_XMS=256m
-      - JVM_XMX=256m
-    ports:
-      - "8848:8848"
-      - "9848:9848"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - anime-network
+  # 1. MySQL、Redis、Nacos 允许 Docker 容器访问（监听 0.0.0.0）
+  # 2. 在服务器防火墙开放 3306、6379、8848 端口
 
   gateway:
     build:
