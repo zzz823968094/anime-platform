@@ -33,6 +33,7 @@
         <jsoup.version>1.17.2</jsoup.version>
         <knife4j.version>4.4.0</knife4j.version>
         <mysql.version>8.0.33</mysql.version>
+        <spring-cloud-starter-bootstrap.version>4.1.4</spring-cloud-starter-bootstrap.version>
     </properties>
 
     <dependencyManagement>
@@ -106,6 +107,18 @@
                 <groupId>com.anime</groupId>
                 <artifactId>common</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <!-- Bootstrap -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-bootstrap</artifactId>
+                <version>${spring-cloud-starter-bootstrap.version}</version>
+            </dependency>
+            <!-- Nacos Config -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

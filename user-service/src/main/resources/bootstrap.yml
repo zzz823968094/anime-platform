@@ -1,0 +1,20 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 10.15.0.5:8848
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 10.15.0.5:8848
+        username: nacos
+        password: nacos
+        file-extension: yml
+        shared-configs:
+          - data-id: mysql-redis.yml
+            refresh: true

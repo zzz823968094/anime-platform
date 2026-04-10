@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 10.15.0.5:8848
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 10.15.0.5:8848
+        username: nacos
+        password: nacos
+        file-extension: yml
