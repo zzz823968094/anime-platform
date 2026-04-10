@@ -1,121 +1,85 @@
 # docker-compose.yml
-# 适用于 Docker Compose V2 (版本 3.8+，建议直接省略 version)
-# 注意：文件名可以是 docker-compose.yml 或 compose.yml
+# 使用 host 网络模式，容器直接共享宿主机网络栈
 
 services:
-  # 注意：MySQL、Redis、Nacos 已在服务器外部部署，无需在此启动
-  # 请确保：
-  # 1. MySQL、Redis、Nacos 允许 Docker 容器访问（监听 0.0.0.0）
-  # 2. 在服务器防火墙开放 3306、6379、8848、9848、9849 端口
-
-  # 获取服务器内网 IP：docker network inspect bridge | grep Gateway
-  # 或者使用：10.15.0.5（Docker 默认网关）
-
   gateway:
-    build:
-      context: ./gateway
+    build: ./gateway
     container_name: anime-gateway
-    ports:
-      - "8080:8080"
+    # 无需 ports 映射，容器端口直接暴露在宿主机上
+    network_mode: host
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=10.15.0.5:8848
-      - SPRING_DATA_REDIS_HOST=10.15.0.5
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
+      - SPRING_DATA_REDIS_HOST=127.0.0.1
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_POSSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!   # 修正拼写 POSSWORD -> PASSWORD
     restart: unless-stopped
-    networks:
-      - anime-network
 
   anime-service:
-    build:
-      context: ./anime-service
+    build: ./anime-service
     container_name: anime-anime-service
-    ports:
-      - "8082:8082"
+    network_mode: host
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=10.15.0.5:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://172.17.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=docker_user
       - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=10.15.0.5
+      - SPRING_DATA_REDIS_HOST=127.0.0.1
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_POSSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
     restart: unless-stopped
-    networks:
-      - anime-network
 
   user-service:
-    build:
-      context: ./user-service
+    build: ./user-service
     container_name: anime-user-service
-    ports:
-      - "8081:8081"
+    network_mode: host
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=10.15.0.5:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://172.17.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=docker_user
       - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=10.15.0.5
+      - SPRING_DATA_REDIS_HOST=127.0.0.1
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_POSSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
     restart: unless-stopped
-    networks:
-      - anime-network
 
   video-service:
-    build:
-      context: ./video-service
+    build: ./video-service
     container_name: anime-video-service
-    ports:
-      - "8083:8083"
+    network_mode: host
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=10.15.0.5:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://172.17.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=docker_user
       - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=10.15.0.5
+      - SPRING_DATA_REDIS_HOST=127.0.0.1
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_POSSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
     restart: unless-stopped
-    networks:
-      - anime-network
 
   danmaku-service:
-    build:
-      context: ./danmaku-service
+    build: ./danmaku-service
     container_name: anime-danmaku-service
-    ports:
-      - "8084:8084"
+    network_mode: host
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=10.15.0.5:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://172.17.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=docker_user
       - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=10.15.0.5
+      - SPRING_DATA_REDIS_HOST=127.0.0.1
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_POSSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
     restart: unless-stopped
-    networks:
-      - anime-network
 
   crawler-service:
-    build:
-      context: ./crawler-service
+    build: ./crawler-service
     container_name: anime-crawler-service
-    ports:
-      - "8085:8085"
+    network_mode: host
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=10.15.0.5:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://172.17.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
+      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=docker_user
       - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=10.15.0.5
+      - SPRING_DATA_REDIS_HOST=127.0.0.1
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_POSSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
     restart: unless-stopped
-    networks:
-      - anime-network
-
-networks:
-  anime-network:
-    driver: bridge
