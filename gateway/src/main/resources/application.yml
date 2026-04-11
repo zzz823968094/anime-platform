@@ -41,12 +41,19 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOrigins:
+              - "https://www.animeparadise.vip"
+              - "https://animeparadise.vip"
+              - "http://www.animeparadise.vip"
+              - "http://animeparadise.vip"
               - "http://159.223.81.85"
               - "http://159.223.81.85:5173"
               - "http://159.223.81.85:3000"
               - "http://localhost"
               - "http://localhost:5173"
               - "http://localhost:3000"
+              - "http://127.0.0.1"
+              - "http://127.0.0.1:5173"
+              - "http://127.0.0.1:3000"
             allowedMethods:
               - GET
               - POST
@@ -56,13 +63,6 @@ spring:
             allowedHeaders: "*"
             allowCredentials: true
             maxAge: 3600
-
-  # Redis（限流过滤器使用）
-  data:
-    redis:
-      host: localhost
-      port: 6379
-
 logging:
   level:
     com.anime: debug
