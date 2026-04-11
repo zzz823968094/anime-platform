@@ -5,81 +5,97 @@ services:
   gateway:
     build: ./gateway
     container_name: anime-gateway
-    # 无需 ports 映射，容器端口直接暴露在宿主机上
     network_mode: host
+    env_file:
+      - .env
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
-      - SPRING_DATA_REDIS_HOST=127.0.0.1
-      - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!   # 修正拼写 POSSWORD -> PASSWORD
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: unless-stopped
 
   anime-service:
     build: ./anime-service
     container_name: anime-anime-service
     network_mode: host
+    env_file:
+      - .env
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=docker_user
-      - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=127.0.0.1
-      - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: unless-stopped
 
   user-service:
     build: ./user-service
     container_name: anime-user-service
     network_mode: host
+    env_file:
+      - .env
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=docker_user
-      - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=127.0.0.1
-      - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
     restart: unless-stopped
 
   video-service:
     build: ./video-service
     container_name: anime-video-service
     network_mode: host
+    env_file:
+      - .env
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=docker_user
-      - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=127.0.0.1
-      - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: unless-stopped
 
   danmaku-service:
     build: ./danmaku-service
     container_name: anime-danmaku-service
     network_mode: host
+    env_file:
+      - .env
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=docker_user
-      - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=127.0.0.1
-      - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: unless-stopped
 
   crawler-service:
     build: ./crawler-service
     container_name: anime-crawler-service
     network_mode: host
+    env_file:
+      - .env
     environment:
-      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=127.0.0.1:8848
-      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/animedb?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=docker_user
-      - SPRING_DATASOURCE_PASSWORD=v7#Kp9$zL2@XmQ5
-      - SPRING_DATA_REDIS_HOST=127.0.0.1
-      - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=xT9#mK2$pLqR5@nV7&wYz3!
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - CRAWLER_ENABLED=${CRAWLER_ENABLED}
+      - CRAWLER_CRON_JAPAN=${CRAWLER_CRON_JAPAN}
+      - CRAWLER_CRON_OTHER=${CRAWLER_CRON_OTHER}
     restart: unless-stopped

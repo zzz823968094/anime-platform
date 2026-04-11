@@ -20,6 +20,7 @@ GIT_REPO="https://github.com/zzz823968094/anime-platform.git"  # 替换为你的
 PROJECT_DIR="/root/anime-platform"
 LOG_FILE="/root/log/anime-platform-deploy.log"
 BACKUP_DIR="/root/anime-platform-backup"
+ENV_FILE="/root/.env.example"  # .env.example 文件路径（服务器 root 目录）
 
 # 日志函数
 log() {
@@ -162,6 +163,88 @@ pull_code() {
     log "最新提交: $(git log -1 --pretty=format:'%h %s')"
 }
 
+# 配置环境变量文件
+setup_env_file() {
+    log "配置环境变量文件..."
+    cd "$PROJECT_DIR"
+
+    if [ -f ".env" ]; then
+        log ".env 文件已存在，跳过配置"
+    else
+        log ".env 文件不存在，开始创建..."
+        
+        # 优先从服务器 root 目录复制
+        if [ -f "$ENV_FILE" ]; then
+            log "从 $ENV_FILE 复制 .env 文件..."
+            cp "$ENV_FILE" .env
+            success ".env 文件已创建（来源: $ENV_FILE）"
+        elif [ -f ".env.example" ]; then
+            log "从项目 .env.example 复制 .env 文件..."
+            cp .env.example .env
+            success ".env 文件已创建（来源: 项目 .env.example）"
+        else
+            error "未找到 .env.example 文件"
+            error "请确保以下任一文件存在："
+            error "  1. $ENV_FILE"
+            error "  2. $PROJECT_DIR/.env.example"
+            exit 1
+        fi
+        
+        warning "请编辑 .env 文件修改敏感配置（数据库密码、JWT密钥等）"
+        warning "编辑命令: nano .env"
+        log "配置文件将在启动前自动检查必需的环境变量"
+    fi
+}
+
+# 验证环境变量
+validate_env() {
+    log "验证环境变量..."
+    cd "$PROJECT_DIR"
+
+    if [ ! -f ".env" ]; then
+        error ".env 文件不存在"
+        exit 1
+    fi
+
+    # 检查关键环境变量
+    local missing_vars=()
+    
+    while IFS='=' read -r key value; do
+        # 跳过注释和空行
+        [[ "$key" =~ ^#.*$ ]] && continue
+        [[ -z "$key" ]] && continue
+        
+        # 检查必需的非空值
+        case "$key" in
+            MYSQL_ROOT_PASSWORD|MYSQL_PASSWORD|REDIS_PASSWORD|JWT_SECRET)
+                if [[ "$value" == *"your_"* ]] || [[ "$value" == *"change_this"* ]] || [ -z "$value" ]; then
+                    missing_vars+=("$key")
+                fi
+                ;;
+        esac
+    done < .env
+
+    if [ ${#missing_vars[@]} -gt 0 ]; then
+        warning "以下环境变量使用了默认值或为空，建议修改："
+        for var in "${missing_vars[@]}"; do
+            warning "  - $var"
+        done
+        echo ""
+        warning "编辑命令: nano .env"
+        echo ""
+        
+        # 询问是否继续
+        read -p "是否继续部署？(y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            error "部署已取消"
+            exit 1
+        fi
+    else
+        success "环境变量验证通过"
+    fi
+}
+
 # 备份当前运行版本
 backup_current() {
     if [ -d "$PROJECT_DIR" ]; then
@@ -178,11 +261,11 @@ stop_containers() {
     log "停止旧容器..."
     cd "$PROJECT_DIR"
 
-    if [ -f docker compose.yml ]; then
+    if [ -f docker-compose.yml ]; then
         docker compose down 2>/dev/null || true
         success "旧容器已停止"
     else
-        warning "未找到docker compose.yml"
+        warning "未找到docker-compose.yml"
     fi
 }
 
@@ -308,6 +391,7 @@ show_deploy_info() {
     echo "  停止所有服务:   cd $PROJECT_DIR && docker compose down"
     echo "  重启服务:       cd $PROJECT_DIR && docker compose restart [服务名]"
     echo "  重新部署:       sudo bash deploy.sh"
+    echo "  编辑环境变量:   nano .env"
     echo ""
 
     echo -e "${YELLOW}Docker容器列表:${NC}"
@@ -341,22 +425,28 @@ main() {
     # 4. 拉取代码
     pull_code
 
-    # 5. 停止旧服务
+    # 5. 配置环境变量文件
+    setup_env_file
+
+    # 6. 验证环境变量
+    validate_env
+
+    # 7. 停止旧服务
     stop_containers
 
-    # 6. 构建项目
+    # 8. 构建项目
     build_project
 
-    # 7. 构建Docker镜像
+    # 9. 构建Docker镜像
     build_docker_images
 
-    # 8. 启动服务
+    # 10. 启动服务
     start_services
 
-    # 9. 检查服务状态
+    # 11. 检查服务状态
     check_services
 
-    # 10. 显示部署信息
+    # 12. 显示部署信息
     show_deploy_info
 
     log "========== 部署完成 =========="
