@@ -18,7 +18,6 @@
         <module>video-service</module>
         <module>danmaku-service</module>
         <module>crawler-service</module>
-        <module>ad-service</module>
     </modules>
 
     <properties>
