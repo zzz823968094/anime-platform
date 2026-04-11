@@ -189,9 +189,7 @@ setup_env_file() {
             error "  2. $PROJECT_DIR/.env.example"
             exit 1
         fi
-        
-        warning "请编辑 .env 文件修改敏感配置（数据库密码、JWT密钥等）"
-        warning "编辑命令: nano .env"
+
         log "配置文件将在启动前自动检查必需的环境变量"
     fi
 }
@@ -382,7 +380,6 @@ show_deploy_info() {
     echo -e "${YELLOW}服务访问地址:${NC}"
     echo "  API网关:        http://$(curl -s ifconfig.me 2>/dev/null || echo '服务器IP'):8080"
     echo "  Nacos控制台:    http://$(curl -s ifconfig.me 2>/dev/null || echo '服务器IP'):8848/nacos"
-    echo "                  默认账号: nacos / nacos"
     echo ""
 
     echo -e "${YELLOW}常用命令:${NC}"
