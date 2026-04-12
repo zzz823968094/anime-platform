@@ -1,5 +1,6 @@
 # docker-compose.yml
 # 使用 host 网络模式，容器直接共享宿主机网络栈
+# 所有服务的数据库、Redis 等配置均从 Nacos 配置中心获取
 
 services:
   gateway:
@@ -10,9 +11,16 @@ services:
       - .env
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
-      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
-      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
-      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
+    restart: unless-stopped
+
+  admin-service:
+    build: ./admin-service
+    container_name: anime-admin-service
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
     restart: unless-stopped
 
   anime-service:
@@ -23,12 +31,6 @@ services:
       - .env
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
-      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
-      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: unless-stopped
 
   user-service:
@@ -39,12 +41,6 @@ services:
       - .env
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
-      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
-      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
     restart: unless-stopped
@@ -57,12 +53,6 @@ services:
       - .env
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
-      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
-      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: unless-stopped
 
   danmaku-service:
@@ -73,12 +63,6 @@ services:
       - .env
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
-      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
-      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: unless-stopped
 
   crawler-service:
@@ -89,12 +73,6 @@ services:
       - .env
     environment:
       - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
-      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - SPRING_DATA_REDIS_HOST=${REDIS_HOST}
-      - SPRING_DATA_REDIS_PORT=${REDIS_PORT}
-      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
       - CRAWLER_ENABLED=${CRAWLER_ENABLED}
       - CRAWLER_CRON_JAPAN=${CRAWLER_CRON_JAPAN}
       - CRAWLER_CRON_OTHER=${CRAWLER_CRON_OTHER}
