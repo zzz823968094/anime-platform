@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class DanmakuHandler extends TextWebSocketHandler {
             String content = (String) data.get("content");
             if (content == null || content.trim().isEmpty()) return;
 
-            // 存数据库
+            // 存数据库，记录发送时间
             Danmaku danmaku = new Danmaku();
             danmaku.setVideoId(videoId);
             danmaku.setContent(content.trim());
@@ -68,17 +69,19 @@ public class DanmakuHandler extends TextWebSocketHandler {
             danmaku.setColor((String) data.getOrDefault("color", "#FFFFFF"));
             danmaku.setDmType(((Number) data.getOrDefault("dmType", 0)).intValue());
             danmaku.setStatus(0);
+            danmaku.setCreatedAt(LocalDateTime.now());
             danmakuMapper.insert(danmaku);
 
-            // 广播给其他人
+            // 广播给其他人（包含 createdAt）
             Map<String, Object> broadcast = new HashMap<>();
-            broadcast.put("type", "danmaku");
-            broadcast.put("id", danmaku.getId());
-            broadcast.put("content", danmaku.getContent());
+            broadcast.put("type",      "danmaku");
+            broadcast.put("id",        danmaku.getId());
+            broadcast.put("content",   danmaku.getContent());
             broadcast.put("timePoint", danmaku.getTimePoint());
-            broadcast.put("color", danmaku.getColor());
-            broadcast.put("dmType", danmaku.getDmType());
-            broadcast.put("username", data.getOrDefault("username", "匿名"));
+            broadcast.put("color",     danmaku.getColor());
+            broadcast.put("dmType",    danmaku.getDmType());
+            broadcast.put("username",  data.getOrDefault("username", "匿名"));
+            broadcast.put("createdAt", danmaku.getCreatedAt().toString());
             String json = objectMapper.writeValueAsString(broadcast);
             connectionManager.broadcast(videoId, json, session);
 
