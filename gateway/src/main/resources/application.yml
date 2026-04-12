@@ -35,7 +35,7 @@ spring:
         - id: crawler-service
           uri: lb://crawler-service
           predicates:
-            - Path=/crawler/**
+            - Path=/api/crawler/**
 
       globalcors:
         cors-configurations:
