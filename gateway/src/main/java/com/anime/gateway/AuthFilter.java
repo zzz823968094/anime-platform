@@ -27,7 +27,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
             "/api/recommend/hot",
             "/api/recommend/latest",
             "/api/search",
-            "/crawler"
+            "/api/crawler"
     );
 
     @Override
