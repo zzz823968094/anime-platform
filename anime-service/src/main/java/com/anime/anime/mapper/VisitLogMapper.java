@@ -3,6 +3,7 @@ package com.anime.anime.mapper;
 import com.anime.anime.entity.VisitLog;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -34,5 +35,5 @@ public interface VisitLogMapper extends BaseMapper<VisitLog> {
 
     // 检查同一 IP 今天是否已上报过同一页面（防重复）
     @Select("SELECT COUNT(*) FROM visit_log WHERE ip = #{ip} AND page = #{page} AND visit_date = CURDATE()")
-    long checkDuplicate(String ip, String page);
+    long checkDuplicate(@Param("ip") String ip, @Param("page") String page);
 }
