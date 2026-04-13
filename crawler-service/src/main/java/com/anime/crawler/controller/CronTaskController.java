@@ -13,7 +13,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/crawler/tasks")
+@RequestMapping("/api/admin/tasks")
 @RequiredArgsConstructor
 public class CronTaskController {
 
@@ -45,9 +45,9 @@ public class CronTaskController {
      */
     @GetMapping("/logs")
     public Result<?> getTaskLogs(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) Long taskId) {
+            @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
+            @RequestParam(value = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(value = "taskId", required = false) Long taskId) {
         Page<CronTaskLog> page = cronTaskService.getTaskLogs(pageNum, pageSize, taskId);
         return Result.ok(page);
     }
@@ -98,7 +98,7 @@ public class CronTaskController {
      * 启用/禁用定时任务
      */
     @PutMapping("/{id}/toggle")
-    public Result<?> toggleTaskEnabled(@PathVariable("id") Long id, @RequestParam Boolean enabled) {
+    public Result<?> toggleTaskEnabled(@PathVariable("id") Long id, @RequestParam(value = "enabled") Boolean enabled) {
         try {
             cronTaskService.toggleTaskEnabled(id, enabled);
             return Result.ok(enabled ? "已启用" : "已禁用");
