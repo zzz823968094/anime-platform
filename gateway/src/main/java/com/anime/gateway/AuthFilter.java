@@ -20,6 +20,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
     private static final List<String> WHITE_LIST = List.of(
             "/api/user/list",
             "/api/user/count",
+            "/api/video/totalCount",
             "/api/anime/visit/stats",
             "/api/auth/login",
             "/api/auth/register",

@@ -4,6 +4,7 @@ import com.anime.common.result.Result;
 import com.anime.video.entity.Video;
 import com.anime.video.mapper.AnimeMapper;
 import com.anime.video.mapper.VideoMapper;
+import com.anime.video.service.VideoService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +15,14 @@ import java.util.List;
 @RequestMapping("/api/video")
 @RequiredArgsConstructor
 public class VideoController {
-
+    private final VideoService videoService;
     private final VideoMapper videoMapper;
     private final AnimeMapper animeMapper;
+
+    @GetMapping("totalCount")
+    public Result<?> totalCount() {
+        return Result.ok(videoService.count());
+    }
 
     @GetMapping("/anime/{animeId}")
     public Result<?> listByAnime(@PathVariable("animeId") Long animeId) {
