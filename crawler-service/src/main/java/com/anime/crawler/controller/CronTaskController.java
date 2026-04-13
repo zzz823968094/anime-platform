@@ -32,7 +32,7 @@ public class CronTaskController {
      * 获取定时任务详情
      */
     @GetMapping("/{id}")
-    public Result<?> getTaskDetail(@PathVariable Long id) {
+    public Result<?> getTaskDetail(@PathVariable("id") Long id) {
         CronTask task = cronTaskService.getTaskById(id);
         if (task == null) {
             return Result.fail("任务不存在");
@@ -70,7 +70,7 @@ public class CronTaskController {
      * 更新定时任务
      */
     @PutMapping("/{id}")
-    public Result<?> updateTask(@PathVariable Long id, @RequestBody CronTask task) {
+    public Result<?> updateTask(@PathVariable("id") Long id, @RequestBody CronTask task) {
         try {
             CronTask updated = cronTaskService.updateTask(id, task);
             return Result.ok(updated);
@@ -84,7 +84,7 @@ public class CronTaskController {
      * 删除定时任务
      */
     @DeleteMapping("/{id}")
-    public Result<?> deleteTask(@PathVariable Long id) {
+    public Result<?> deleteTask(@PathVariable("id") Long id) {
         try {
             cronTaskService.deleteTask(id);
             return Result.ok("删除成功");
@@ -98,7 +98,7 @@ public class CronTaskController {
      * 启用/禁用定时任务
      */
     @PutMapping("/{id}/toggle")
-    public Result<?> toggleTaskEnabled(@PathVariable Long id, @RequestParam Boolean enabled) {
+    public Result<?> toggleTaskEnabled(@PathVariable("id") Long id, @RequestParam Boolean enabled) {
         try {
             cronTaskService.toggleTaskEnabled(id, enabled);
             return Result.ok(enabled ? "已启用" : "已禁用");

@@ -64,7 +64,7 @@ public class AdminUserController {
      * 获取管理员详情
      */
     @GetMapping("/{id}")
-    public Result<?> getById(@PathVariable Integer id) {
+    public Result<?> getById(@PathVariable("id") Integer id) {
         AdminUser admin = adminUserService.getById(id);
         if (admin == null) {
             return Result.fail(404, "管理员不存在");
@@ -86,7 +86,7 @@ public class AdminUserController {
      * 更新管理员
      */
     @PutMapping("/{id}")
-    public Result<?> update(@PathVariable Integer id, @RequestBody AdminUser adminUser) {
+    public Result<?> update(@PathVariable("id") Integer id, @RequestBody AdminUser adminUser) {
         AdminUser updated = adminUserService.updateAdmin(id, adminUser);
         return Result.ok(updated);
     }
@@ -95,7 +95,7 @@ public class AdminUserController {
      * 删除管理员
      */
     @DeleteMapping("/{id}")
-    public Result<?> delete(@PathVariable Integer id) {
+    public Result<?> delete(@PathVariable("id") Integer id) {
         adminUserService.deleteAdmin(id);
         return Result.ok();
     }
