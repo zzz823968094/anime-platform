@@ -13,7 +13,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/admin/tasks")
+@RequestMapping("/api/crawler/tasks")
 @RequiredArgsConstructor
 public class CronTaskController {
 
