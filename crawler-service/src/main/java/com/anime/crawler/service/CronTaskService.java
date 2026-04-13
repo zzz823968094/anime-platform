@@ -1,11 +1,14 @@
 package com.anime.crawler.service;
 
+import com.anime.common.exception.BusinessException;
 import com.anime.crawler.entity.CronTask;
 import com.anime.crawler.entity.CronTaskLog;
 import com.anime.crawler.mapper.CronTaskLogMapper;
 import com.anime.crawler.mapper.CronTaskMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TriggerContext;
@@ -14,8 +17,6 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -109,7 +110,7 @@ public class CronTaskService {
     public CronTask updateTask(Long id, CronTask task) {
         CronTask existing = taskMapper.selectById(id);
         if (existing == null) {
-            throw new RuntimeException("任务不存在");
+            throw new BusinessException("任务不存在");
         }
         
         // 停止旧任务
@@ -142,7 +143,7 @@ public class CronTaskService {
     public void deleteTask(Long id) {
         CronTask task = taskMapper.selectById(id);
         if (task == null) {
-            throw new RuntimeException("任务不存在");
+            throw new BusinessException("任务不存在");
         }
         
         // 停止调度
@@ -159,7 +160,7 @@ public class CronTaskService {
     public void toggleTaskEnabled(Long id, Boolean enabled) {
         CronTask task = taskMapper.selectById(id);
         if (task == null) {
-            throw new RuntimeException("任务不存在");
+            throw new BusinessException("任务不存在");
         }
         
         task.setEnabled(enabled);
@@ -181,7 +182,7 @@ public class CronTaskService {
     public void executeTaskNow(Long id) {
         CronTask task = taskMapper.selectById(id);
         if (task == null) {
-            throw new RuntimeException("任务不存在");
+            throw new BusinessException("任务不存在");
         }
         
         // 异步执行

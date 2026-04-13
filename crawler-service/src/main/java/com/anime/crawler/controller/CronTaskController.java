@@ -57,13 +57,8 @@ public class CronTaskController {
      */
     @PostMapping
     public Result<?> createTask(@RequestBody CronTask task) {
-        try {
-            CronTask created = cronTaskService.createTask(task);
-            return Result.ok(created);
-        } catch (Exception e) {
-            log.error("创建定时任务失败", e);
-            return Result.fail("创建定时任务失败: " + e.getMessage());
-        }
+        CronTask created = cronTaskService.createTask(task);
+        return Result.ok(created);
     }
 
     /**
@@ -71,13 +66,8 @@ public class CronTaskController {
      */
     @PutMapping("/{id}")
     public Result<?> updateTask(@PathVariable("id") Long id, @RequestBody CronTask task) {
-        try {
-            CronTask updated = cronTaskService.updateTask(id, task);
-            return Result.ok(updated);
-        } catch (Exception e) {
-            log.error("更新定时任务失败", e);
-            return Result.fail("更新定时任务失败: " + e.getMessage());
-        }
+        CronTask updated = cronTaskService.updateTask(id, task);
+        return Result.ok(updated);
     }
 
     /**
@@ -85,13 +75,8 @@ public class CronTaskController {
      */
     @DeleteMapping("/{id}")
     public Result<?> deleteTask(@PathVariable("id") Long id) {
-        try {
-            cronTaskService.deleteTask(id);
-            return Result.ok("删除成功");
-        } catch (Exception e) {
-            log.error("删除定时任务失败", e);
-            return Result.fail("删除定时任务失败: " + e.getMessage());
-        }
+        cronTaskService.deleteTask(id);
+        return Result.ok("删除成功");
     }
 
     /**
@@ -99,13 +84,8 @@ public class CronTaskController {
      */
     @PutMapping("/{id}/toggle")
     public Result<?> toggleTaskEnabled(@PathVariable("id") Long id, @RequestParam(value = "enabled") Boolean enabled) {
-        try {
-            cronTaskService.toggleTaskEnabled(id, enabled);
-            return Result.ok(enabled ? "已启用" : "已禁用");
-        } catch (Exception e) {
-            log.error("切换任务状态失败", e);
-            return Result.fail("操作失败: " + e.getMessage());
-        }
+        cronTaskService.toggleTaskEnabled(id, enabled);
+        return Result.ok(enabled ? "已启用" : "已禁用");
     }
 
     /**
@@ -113,13 +93,8 @@ public class CronTaskController {
      */
     @PostMapping("/{id}/execute")
     public Result<?> executeTask(@PathVariable Long id) {
-        try {
-            cronTaskService.executeTaskNow(id);
-            return Result.ok("任务已启动执行");
-        } catch (Exception e) {
-            log.error("执行任务失败", e);
-            return Result.fail("执行任务失败: " + e.getMessage());
-        }
+        cronTaskService.executeTaskNow(id);
+        return Result.ok("任务已启动执行");
     }
 
     /**
@@ -127,13 +102,8 @@ public class CronTaskController {
      */
     @PostMapping("/{id}/cancel")
     public Result<?> cancelTask(@PathVariable Long id) {
-        try {
-            cronTaskService.cancelTask(id);
-            return Result.ok("任务已取消");
-        } catch (Exception e) {
-            log.error("取消任务失败", e);
-            return Result.fail("取消任务失败: " + e.getMessage());
-        }
+        cronTaskService.cancelTask(id);
+        return Result.ok("任务已取消");
     }
 
     /**
@@ -146,16 +116,10 @@ public class CronTaskController {
         if (type != 25 && type != 26 && type != 24) {
             return Result.fail("不支持的分类 type，只允许 25/26/24");
         }
-        
+
         int maxPages = pages != null ? pages : (type == 25 ? 44 : type == 26 ? 9 : 47);
-        
-        try {
-            cronTaskService.quickSync(type, maxPages);
-            String typeName = type == 25 ? "日本动漫" : type == 26 ? "欧美动漫" : "中国动漫";
-            return Result.ok("已启动：" + typeName + " 快速同步，共 " + maxPages + " 页");
-        } catch (Exception e) {
-            log.error("快速同步失败", e);
-            return Result.fail("快速同步失败: " + e.getMessage());
-        }
+        cronTaskService.quickSync(type, maxPages);
+        String typeName = type == 25 ? "日本动漫" : type == 26 ? "欧美动漫" : "中国动漫";
+        return Result.ok("已启动：" + typeName + " 快速同步，共 " + maxPages + " 页");
     }
 }

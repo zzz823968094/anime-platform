@@ -2,16 +2,13 @@ package com.anime.user.controller;
 
 import com.anime.common.result.Result;
 import com.anime.user.entity.User;
-import com.anime.user.entity.UserFavorite;
 import com.anime.user.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
-
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;

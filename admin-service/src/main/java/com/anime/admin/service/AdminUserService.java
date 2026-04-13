@@ -3,8 +3,6 @@ package com.anime.admin.service;
 import com.anime.admin.entity.AdminUser;
 import com.baomidou.mybatisplus.extension.service.IService;
 
-import java.util.Map;
-
 public interface AdminUserService extends IService<AdminUser> {
     
     /**
