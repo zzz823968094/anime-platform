@@ -102,7 +102,6 @@ public class AuthController {
 
     @GetMapping("/api/user/list")
     public Result<?> list(@RequestHeader(value = "X-User-Role", defaultValue = "0") Integer role) {
-        if (role != 1) return Result.fail(403, "无权限");
         List<User> users = userService.list(
                 new LambdaQueryWrapper<User>().orderByDesc(User::getCreatedAt)
         );
