@@ -3,6 +3,7 @@ package com.anime.admin.service.impl;
 import com.anime.admin.entity.AdminUser;
 import com.anime.admin.mapper.AdminUserMapper;
 import com.anime.admin.service.AdminUserService;
+import com.anime.common.enums.UserStatusEnum;
 import com.anime.common.exception.BusinessException;
 import com.anime.common.utils.JwtUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -38,11 +39,8 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
         if (phoneExists(adminUser.getPhone())) {
             throw new BusinessException(400, "手机号已存在");
         }
-        // 设置默认状态
-        if (adminUser.getStatus() == null || adminUser.getStatus().isEmpty()) {
-            adminUser.setStatus("NORMAL");
-        }
         adminUser.setPassword(passwordEncoder.encode("123456"));
+        adminUser.setStatus(UserStatusEnum.NORMAL);
         adminUser.setCreateTime(LocalDateTime.now());
         adminUser.setUpdateTime(LocalDateTime.now());
         baseMapper.insert(adminUser);

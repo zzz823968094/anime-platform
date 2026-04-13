@@ -1,5 +1,6 @@
 package com.anime.admin.entity;
 
+import com.anime.common.enums.UserStatusEnum;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -18,7 +19,7 @@ public class AdminUser {
     
     private String password;
     
-    private String status;
+    private UserStatusEnum status;
     
     private LocalDateTime createTime;
     

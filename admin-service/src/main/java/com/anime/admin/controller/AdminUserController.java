@@ -2,6 +2,7 @@ package com.anime.admin.controller;
 
 import com.anime.admin.entity.AdminUser;
 import com.anime.admin.service.AdminUserService;
+import com.anime.common.enums.UserStatusEnum;
 import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -103,7 +104,7 @@ public class AdminUserController {
      * 启用/禁用管理员
      */
     @PutMapping("/{id}/status")
-    public Result<?> updateStatus(@PathVariable Integer id, @RequestBody String status) {
+    public Result<?> updateStatus(@PathVariable Integer id, @RequestBody UserStatusEnum status) {
         AdminUser update = new AdminUser();
         update.setStatus(status);
         AdminUser updated = adminUserService.updateAdmin(id, update);
