@@ -51,9 +51,7 @@ public class AnimeController {
 
     @DeleteMapping("/{id}")
     public Result<?> delete(
-            @PathVariable("id") Long id,
-            @RequestHeader(value = "X-User-Role", defaultValue = "0") Integer role) {
-        if (role != 1) return Result.fail(403, "无权限");
+            @PathVariable("id") Long id) {
         Anime anime = animeService.getById(id);
         if (anime == null) return Result.fail(404, "番剧不存在");
         anime.setStatus(0);
@@ -63,9 +61,7 @@ public class AnimeController {
 
     @PutMapping("/{id}/online")
     public Result<?> online(
-            @PathVariable("id") Long id,
-            @RequestHeader(value = "X-User-Role", defaultValue = "0") Integer role) {
-        if (role != 1) return Result.fail(403, "无权限");
+            @PathVariable("id") Long id) {
         Anime anime = animeService.getById(id);
         if (anime == null) return Result.fail(404, "番剧不存在");
         anime.setStatus(1);

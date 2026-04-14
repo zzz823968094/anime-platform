@@ -70,11 +70,9 @@ public class AuthFilter implements GlobalFilter, Ordered {
 
         // 解析用户信息，写入请求头传给下游
         Long userId = JwtUtils.getUserId(token);
-        Integer role = JwtUtils.getRole(token);
 
         ServerHttpRequest mutatedRequest = request.mutate()
                 .header("X-User-Id", userId.toString())
-                .header("X-User-Role", role.toString())
                 .build();
 
         return chain.filter(exchange.mutate().request(mutatedRequest).build());

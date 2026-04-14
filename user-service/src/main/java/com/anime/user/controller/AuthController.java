@@ -98,7 +98,7 @@ public class AuthController {
     }
 
     @GetMapping("/api/user/list")
-    public Result<?> list(@RequestHeader(value = "X-User-Role", defaultValue = "0") Integer role) {
+    public Result<?> list() {
         List<User> users = userService.list(
                 new LambdaQueryWrapper<User>().orderByDesc(User::getCreatedAt)
         );
