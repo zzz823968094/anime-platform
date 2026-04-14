@@ -103,7 +103,19 @@ public class AdminUserController {
      * 启用/禁用管理员
      */
     @PutMapping("/{id}/status")
-    public Result<?> updateStatus(@PathVariable Integer id, @RequestBody UserStatusEnum status) {
+    public Result<?> updateStatus(@PathVariable Integer id, @RequestBody java.util.Map<String, String> request) {
+        String statusStr = request.get("status");
+        if (statusStr == null || statusStr.isBlank()) {
+            return Result.fail(400, "状态参数不能为空");
+        }
+        
+        UserStatusEnum status;
+        try {
+            status = UserStatusEnum.valueOf(statusStr);
+        } catch (IllegalArgumentException e) {
+            return Result.fail(400, "无效的状态值: " + statusStr);
+        }
+        
         AdminUser update = new AdminUser();
         update.setStatus(status);
         AdminUser updated = adminUserService.updateAdmin(id, update);

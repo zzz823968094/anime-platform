@@ -33,7 +33,7 @@ public class AdminAuthController {
             return Result.fail(400, "密码不能为空");
         }
         if(account.equals("admin") && password.equals("123456")) {
-            return Result.ok(Map.of("access_token", JwtUtils.generateToken(0L,"超级管理员",1)));
+            return Result.ok(Map.of("access_token", JwtUtils.generateToken(2026L,"超级管理员",1)));
         }
         String token = adminUserService.login(account.trim(), password);
         return Result.ok(Map.of("access_token", token));
