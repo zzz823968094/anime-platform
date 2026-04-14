@@ -22,10 +22,10 @@ public class AdminUserController {
      */
     @GetMapping("/list")
     public Result<?> list(
-            @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "10") Integer pageSize,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String status,
+            @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
+            @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "status", required = false) String status,
             HttpServletRequest request
     ) {
         LambdaQueryWrapper<AdminUser> queryWrapper = new LambdaQueryWrapper<>();
