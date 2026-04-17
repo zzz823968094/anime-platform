@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anime.crawler.mapper.VideoMapper">
+
+    <!-- 批量插入视频数据,忽略重复记录 -->
+    <insert id="insertBatchIgnore">
+        INSERT IGNORE INTO video (
+            id, anime_id, episode, title, m3u8_url, duration,
+            view_count, status, created_at, updated_at
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id}, #{item.animeId}, #{item.episode}, #{item.title},
+                #{item.m3u8Url}, #{item.duration}, #{item.viewCount},
+                #{item.status}, #{item.createdAt}, #{item.updatedAt}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 统计指定动漫的视频集数 -->
+    <select id="countByAnimeId" resultType="int">
+        SELECT COUNT(*) FROM video WHERE anime_id = #{animeId}
+    </select>
+
+
+</mapper>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anime.crawler.mapper.AnimeTableMapper">
+
+    <!-- 批量插入动漫数据,忽略重复记录 -->
+    <insert id="insertBatchIgnore">
+        INSERT IGNORE INTO anime_table (
+            id, vod_id, type_id, type_id_1, group_id, vod_name, vod_sub, vod_en,
+            vod_status, vod_letter, vod_color, vod_tag, vod_class, vod_pic,
+            vod_pic_thumb, vod_pic_slide, vod_pic_screenshot, vod_actor,
+            vod_director, vod_writer, vod_behind, vod_blurb, vod_remarks,
+            vod_pubdate, vod_total, vod_serial, vod_tv, vod_weekday, vod_area,
+            vod_lang, vod_year, vod_version, vod_state, vod_author, vod_jumpurl,
+            vod_tpl, vod_tpl_play, vod_tpl_down, vod_isend, vod_lock, vod_level,
+            vod_copyright, vod_points, vod_points_play, vod_points_down,
+            vod_hits, vod_hits_day, vod_hits_week, vod_hits_month, vod_duration,
+            vod_up, vod_down, vod_score, vod_score_all, vod_score_num, vod_time,
+            vod_time_add, vod_time_hits, vod_time_make, vod_trysee, vod_douban_id,
+            vod_douban_score, vod_reurl, vod_rel_vod, vod_rel_art, vod_pwd,
+            vod_pwd_url, vod_pwd_play, vod_pwd_play_url, vod_pwd_down,
+            vod_pwd_down_url, vod_content, vod_play_from, vod_play_server,
+            vod_play_note, vod_down_from, vod_down_server, vod_down_note,
+            vod_down_url, vod_plot, vod_plot_name, vod_plot_detail, type_name
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id}, #{item.vodId}, #{item.typeId}, #{item.typeId1},
+                #{item.groupId}, #{item.vodName}, #{item.vodSub}, #{item.vodEn},
+                #{item.vodStatus}, #{item.vodLetter}, #{item.vodColor}, #{item.vodTag},
+                #{item.vodClass}, #{item.vodPic}, #{item.vodPicThumb}, #{item.vodPicSlide},
+                #{item.vodPicScreenshot}, #{item.vodActor}, #{item.vodDirector},
+                #{item.vodWriter}, #{item.vodBehind}, #{item.vodBlurb}, #{item.vodRemarks},
+                #{item.vodPubdate}, #{item.vodTotal}, #{item.vodSerial}, #{item.vodTv},
+                #{item.vodWeekday}, #{item.vodArea}, #{item.vodLang}, #{item.vodYear},
+                #{item.vodVersion}, #{item.vodState}, #{item.vodAuthor}, #{item.vodJumpurl},
+                #{item.vodTpl}, #{item.vodTplPlay}, #{item.vodTplDown}, #{item.vodIsend},
+                #{item.vodLock}, #{item.vodLevel}, #{item.vodCopyright}, #{item.vodPoints},
+                #{item.vodPointsPlay}, #{item.vodPointsDown}, #{item.vodHits},
+                #{item.vodHitsDay}, #{item.vodHitsWeek}, #{item.vodHitsMonth},
+                #{item.vodDuration}, #{item.vodUp}, #{item.vodDown}, #{item.vodScore},
+                #{item.vodScoreAll}, #{item.vodScoreNum}, #{item.vodTime},
+                #{item.vodTimeAdd}, #{item.vodTimeHits}, #{item.vodTimeMake},
+                #{item.vodTrysee}, #{item.vodDoubanId}, #{item.vodDoubanScore},
+                #{item.vodReurl}, #{item.vodRelVod}, #{item.vodRelArt}, #{item.vodPwd},
+                #{item.vodPwdUrl}, #{item.vodPwdPlay}, #{item.vodPwdPlayUrl},
+                #{item.vodPwdDown}, #{item.vodPwdDownUrl}, #{item.vodContent},
+                #{item.vodPlayFrom}, #{item.vodPlayServer}, #{item.vodPlayNote},
+                #{item.vodDownFrom}, #{item.vodDownServer}, #{item.vodDownNote},
+                #{item.vodDownUrl}, #{item.vodPlot}, #{item.vodPlotName},
+                #{item.vodPlotDetail}, #{item.typeName}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据vodId查询动漫信息 -->
+    <select id="selectByVodId" resultType="com.anime.crawler.entity.AnimeTable">
+        SELECT * FROM anime_table WHERE vod_id = #{vodId} LIMIT 1
+    </select>
+
+    <!-- 批量更新动漫数据(根据ID) -->
+    <update id="updateBatchById">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE anime_table SET
+                vod_total = #{item.vodTotal},
+                vod_name = #{item.vodName},
+                vod_sub = #{item.vodSub},
+                vod_pic = #{item.vodPic},
+                vod_actor = #{item.vodActor},
+                vod_director = #{item.vodDirector},
+                vod_blurb = #{item.vodBlurb},
+                vod_remarks = #{item.vodRemarks},
+                vod_pubdate = #{item.vodPubdate},
+                vod_content = #{item.vodContent},
+                update_at = NOW()
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+
+    <!-- 清除所有视频的日播放量 -->
+    <update id="clearDailyViewCount">
+        UPDATE anime_table SET vod_hits_day = 0
+    </update>
+
+    <!-- 清除所有视频的周播放量 -->
+    <update id="clearWeeklyViewCount">
+        UPDATE anime_table SET vod_hits_week = 0
+    </update>
+
+    <!-- 清除所有视频的月播放量 -->
+    <update id="clearMonthlyViewCount">
+        UPDATE anime_table SET vod_hits_month = 0
+    </update>
+</mapper>

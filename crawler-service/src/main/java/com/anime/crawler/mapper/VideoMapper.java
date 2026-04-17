@@ -18,4 +18,5 @@ public interface VideoMapper extends BaseMapper<Video> {
      * 统计指定动漫的视频集数
      */
     int countByAnimeId(@Param("animeId") Long animeId);
+
 }

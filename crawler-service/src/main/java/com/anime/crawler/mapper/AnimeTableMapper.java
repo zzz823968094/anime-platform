@@ -23,4 +23,18 @@ public interface AnimeTableMapper extends BaseMapper<AnimeTable> {
      * 批量更新动漫数据(根据ID)
      */
     int updateBatchById(@Param("list") List<AnimeTable> list);
+    /**
+     * 清除所有视频的日播放量
+     */
+    int clearDailyViewCount();
+
+    /**
+     * 清除所有视频的周播放量
+     */
+    int clearWeeklyViewCount();
+
+    /**
+     * 清除所有视频的月播放量
+     */
+    int clearMonthlyViewCount();
 }
