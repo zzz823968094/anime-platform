@@ -26,12 +26,4 @@ public class Video {
     private Integer status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    @TableField(exist = false)
-    private String playUrl;
-
-    public String getPlayUrl() {
-        if (this.m3u8Url == null || this.m3u8Url.isBlank()) return null;
-        return "https://hhzyjiexi.com/play/?url=" + this.m3u8Url;
-    }
 }
