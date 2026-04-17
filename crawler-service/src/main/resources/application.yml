@@ -12,4 +12,4 @@ mybatis-plus:
 
 logging:
   level:
-    com.anime: debug
+    com.anime: info

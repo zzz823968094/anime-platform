@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @TableName("cron_task")
@@ -16,20 +17,20 @@ public class CronTask {
     private String taskName;
     
     private Integer taskType;
+
+    private Integer hour;
     
     private String cronExpression;
-    
-    private Integer pages;
     
     private Boolean enabled;
     
     private String status;
     
-    private LocalDateTime lastExecuteTime;
+    private Date lastExecuteTime;
     
-    private LocalDateTime nextExecuteTime;
+    private Date nextExecuteTime;
     
-    private LocalDateTime createdAt;
+    private Date createdAt;
     
-    private LocalDateTime updatedAt;
+    private Date updatedAt;
 }

@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 高性能分布式ID生成器
@@ -42,6 +43,9 @@ public class IdUtil {
     // 上次生成ID的时间戳
     private static volatile long lastTimestamp = -1L;
 
+    // 用于保证线程安全的锁
+    private static final ReentrantLock LOCK = new ReentrantLock();
+
     static {
         // 初始化节点ID（优先从环境变量获取，否则从MAC地址生成）
         long nodeId = getNodeIdFromEnv();
@@ -55,36 +59,43 @@ public class IdUtil {
     }
 
     /**
-     * 生成唯一ID
+     * 生成唯一ID(线程安全)
+     * 使用ReentrantLock保证高并发下的唯一性
      */
     public static long nextId() {
-        long currentTimestamp = getCurrentTimestamp();
-        long sequence = SEQUENCE.get();
+        LOCK.lock();
+        try {
+            long currentTimestamp = getCurrentTimestamp();
 
-        if (currentTimestamp < lastTimestamp) {
-            // 时钟回拨处理：等待到上次时间戳
-            currentTimestamp = waitUntilNextMillis(lastTimestamp);
-            sequence = SEQUENCE.get();
-        }
-
-        if (currentTimestamp == lastTimestamp) {
-            // 同一毫秒内，序列号递增
-            sequence = SEQUENCE.incrementAndGet() & MAX_SEQUENCE;
-            if (sequence == 0) {
-                // 当前毫秒序列号用完，等待下一毫秒
+            if (currentTimestamp < lastTimestamp) {
+                // 时钟回拨处理：等待到上次时间戳
                 currentTimestamp = waitUntilNextMillis(lastTimestamp);
             }
-        } else {
-            // 不同毫秒，重置序列号
-            sequence = 0;
-            SEQUENCE.set(0);
+
+            long sequence;
+            if (currentTimestamp == lastTimestamp) {
+                // 同一毫秒内，序列号递增
+                sequence = SEQUENCE.incrementAndGet() & MAX_SEQUENCE;
+                if (sequence == 0) {
+                    // 当前毫秒序列号用完，等待下一毫秒
+                    currentTimestamp = waitUntilNextMillis(lastTimestamp);
+                    sequence = 0;
+                    SEQUENCE.set(0);
+                }
+            } else {
+                // 不同毫秒，重置序列号
+                sequence = 0;
+                SEQUENCE.set(0);
+            }
+
+            lastTimestamp = currentTimestamp;
+
+            return ((currentTimestamp - START_TIMESTAMP) << TIMESTAMP_LEFT_SHIFT)
+                    | (NODE_ID << NODE_LEFT_SHIFT)
+                    | sequence;
+        } finally {
+            LOCK.unlock();
         }
-
-        lastTimestamp = currentTimestamp;
-
-        return ((currentTimestamp - START_TIMESTAMP) << TIMESTAMP_LEFT_SHIFT)
-                | (NODE_ID << NODE_LEFT_SHIFT)
-                | sequence;
     }
 
     /**

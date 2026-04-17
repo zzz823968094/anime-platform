@@ -129,30 +129,38 @@ public class CrawlerService {
 
     /**
      * 发起HTTP请求并获取结果,带有重试机制
+     * 使用递增延迟重试策略应对网络波动
      */
     private String fetchData(String url) {
         int maxRetries = 3;
         for (int i = 0; i < maxRetries; i++) {
             try {
-                String result = HttpUtil.get(url, 10000); // 10秒超时
+                // 设置30秒超时,适应较慢的网络环境
+                String result = HttpUtil.get(url, 60000);
                 if (StrUtil.isNotEmpty(result)) {
                     return result;
                 }
             } catch (Exception e) {
-                log.warn("请求失败,第 {} 次重试: {}", i + 1, url, e);
-                try {
-                    Thread.sleep(1000 * (i + 1)); // 递增延迟重试
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    break;
+                log.warn("请求失败,第 {} 次重试: {}", i + 1, url);
+                if (i < maxRetries - 1) {
+                    try {
+                        // 指数退避: 1s -> 2s -> 4s
+                        long delay = 1000L * (long) Math.pow(2, i);
+                        Thread.sleep(delay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
             }
         }
+        log.error("请求最终失败,已达到最大重试次数: {}", url);
         return null;
     }
 
     /**
      * 处理动漫列表数据
+     * 增加去重逻辑:检查vod_total是否更新,避免重复爬取相同数据
      */
     public void processList(JSONArray list) {
         if (list == null || list.isEmpty()) {
@@ -166,14 +174,46 @@ public class CrawlerService {
             try {
                 JSONObject object = JSONUtil.parseObj(list.get(i));
                 AnimeTable bean = JSONUtil.toBean(object, AnimeTable.class);
-                long id = IdUtil.nextId();
-                bean.setId(id);
+                
+                // 检查该动漫是否已存在(通过vodId)
+                if (bean.getVodId() != null) {
+                    AnimeTable existingAnime = animeTableMapper.selectByVodId(bean.getVodId());
+                    if (existingAnime != null) {
+                        // 计算新爬取的集数
+                        String vodContent = object.getStr("vod_play_url");
+                        int newEpisodeCount = 0;
+                        if (StrUtil.isNotEmpty(vodContent)) {
+                            newEpisodeCount = vodContent.split("#").length;
+                        }
+                        
+                        // 如果数据库中已有的集数 >= 新爬取的集数,说明没有更新,跳过
+                        if (existingAnime.getVodTotal() != null && existingAnime.getVodTotal() >= newEpisodeCount) {
+                            log.debug("动漫 {} 无更新,数据库集数: {}, 新爬取集数: {}, 跳过", 
+                                    bean.getVodName(), existingAnime.getVodTotal(), newEpisodeCount);
+                            continue;
+                        }
+                        
+                        // 有更新,使用已有ID
+                        bean.setId(existingAnime.getId());
+                        log.info("动漫 {} 有更新,数据库集数: {}, 新爬取集数: {}", 
+                                bean.getVodName(), existingAnime.getVodTotal(), newEpisodeCount);
+                    } else {
+                        // 不存在,生成新ID
+                        long id = IdUtil.nextId();
+                        bean.setId(id);
+                    }
+                } else {
+                    // vodId为空,生成新ID
+                    long id = IdUtil.nextId();
+                    bean.setId(id);
+                }
+                
                 String vodContent = object.getStr("vod_play_url");
                 if (StrUtil.isNotEmpty(vodContent)) {
-                    List<Video> videos = processVideoList(id, vodContent);
+                    List<Video> videos = processVideoList(bean.getId(), vodContent);
+                    bean.setVodTotal(videos.size());
                     allVideos.addAll(videos);
                 }
-                bean.setVodTotal(allVideos.size());
                 animeBatch.add(bean);
 
                 // 达到批量大小时执行插入
@@ -195,23 +235,59 @@ public class CrawlerService {
 
     /**
      * 批量插入动漫和视频数据
+     * 使用INSERT IGNORE避免主键冲突异常
+     * 对于已存在的动漫(通过vodId判断),执行更新操作
      */
     private void insertBatch(List<AnimeTable> animeList, List<Video> videoList) {
         try {
             if (!animeList.isEmpty()) {
-                // 分批插入动漫数据
-                List<List<AnimeTable>> animePartitions = CollUtil.split(animeList, BATCH_SIZE);
-                for (List<AnimeTable> partition : animePartitions) {
-                    animeTableMapper.insert(partition);
+                // 分离新增和更新的动漫
+                List<AnimeTable> newAnimeList = new ArrayList<>();
+                List<AnimeTable> updateAnimeList = new ArrayList<>();
+                
+                for (AnimeTable anime : animeList) {
+                    if (anime.getVodId() != null) {
+                        AnimeTable existing = animeTableMapper.selectByVodId(anime.getVodId());
+                        if (existing != null) {
+                            // 已存在,需要更新
+                            anime.setId(existing.getId());
+                            updateAnimeList.add(anime);
+                        } else {
+                            // 不存在,需要新增
+                            newAnimeList.add(anime);
+                        }
+                    } else {
+                        // vodId为空,直接新增
+                        newAnimeList.add(anime);
+                    }
+                }
+                
+                // 分批插入新动漫数据,忽略重复记录
+                if (!newAnimeList.isEmpty()) {
+                    List<List<AnimeTable>> newPartitions = CollUtil.split(newAnimeList, BATCH_SIZE);
+                    for (List<AnimeTable> partition : newPartitions) {
+                        animeTableMapper.insertBatchIgnore(partition);
+                    }
+                    log.info("批量新增动漫: {} 条", newAnimeList.size());
+                }
+                
+                // 分批更新已有动漫数据
+                if (!updateAnimeList.isEmpty()) {
+                    List<List<AnimeTable>> updatePartitions = CollUtil.split(updateAnimeList, BATCH_SIZE);
+                    for (List<AnimeTable> partition : updatePartitions) {
+                        animeTableMapper.updateBatchById(partition);
+                    }
+                    log.info("批量更新动漫: {} 条", updateAnimeList.size());
                 }
             }
 
             if (!videoList.isEmpty()) {
-                // 分批插入视频数据
+                // 分批插入视频数据,忽略重复记录
                 List<List<Video>> videoPartitions = CollUtil.split(videoList, BATCH_SIZE);
                 for (List<Video> partition : videoPartitions) {
-                    videoMapper.insert(partition);
+                    videoMapper.insertBatchIgnore(partition);
                 }
+                log.info("批量插入视频: {} 条", videoList.size());
             }
         } catch (Exception e) {
             log.error("批量插入数据时发生异常", e);
@@ -225,7 +301,6 @@ public class CrawlerService {
     public List<Video> processVideoList(Long animeId, String vodContent) {
         List<Video> list = new ArrayList<>();
         String[] split = vodContent.split("#");
-
         for (String url : split) {
             try {
                 String[] split1 = url.split("\\$", 2); // 限制分割次数为2
@@ -233,14 +308,12 @@ public class CrawlerService {
                     log.warn("视频链接格式错误: {}", url);
                     continue;
                 }
-
                 Video video = new Video();
                 video.setId(IdUtil.nextId());
                 video.setTitle(split1[0]);
                 video.setAnimeId(animeId);
                 video.setStatus(1);
                 video.setM3u8Url(BASE_VIDEO_URL + split1[1]);
-
                 // 使用预编译的正则表达式提取数字
                 String number = NON_DIGIT_PATTERN.matcher(split1[0]).replaceAll("");
                 if (StrUtil.isNotEmpty(number)) {

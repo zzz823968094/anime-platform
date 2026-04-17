@@ -35,7 +35,7 @@ spring:
         - id: crawler-service
           uri: lb://crawler-service
           predicates:
-            - Path=/api/crawler/**,/test
+            - Path=/api/crawler/**
 
         - id: admin-service
           uri: lb://admin-service

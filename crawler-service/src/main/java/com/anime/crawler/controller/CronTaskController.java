@@ -1,5 +1,6 @@
 package com.anime.crawler.controller;
 
+import cn.hutool.cron.CronUtil;
 import com.anime.common.result.Result;
 import com.anime.crawler.entity.CronTask;
 import com.anime.crawler.entity.CronTaskLog;
@@ -111,15 +112,13 @@ public class CronTaskController {
      */
     @PostMapping("/sync/{type}")
     public Result<?> quickSync(
-            @PathVariable int type,
-            @RequestParam(value = "pages", required = false) Integer pages) {
+            @PathVariable int type) {
         if (type != 25 && type != 26 && type != 24) {
             return Result.fail("不支持的分类 type，只允许 25/26/24");
         }
 
-        int maxPages = pages != null ? pages : (type == 25 ? 44 : type == 26 ? 9 : 47);
-        cronTaskService.quickSync(type, maxPages);
+        cronTaskService.quickSync(type);
         String typeName = type == 25 ? "日本动漫" : type == 26 ? "欧美动漫" : "中国动漫";
-        return Result.ok("已启动：" + typeName + " 快速同步，共 " + maxPages + " 页");
+        return Result.ok("已启动：" + typeName + " 快速同步");
     }
 }

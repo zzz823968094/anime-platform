@@ -3,7 +3,6 @@ package com.anime.crawler.controller;
 import com.anime.common.result.Result;
 import com.anime.crawler.service.BangumiService;
 import com.anime.crawler.service.CrawlerService;
-import com.anime.crawler.service.CrawlerService2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
