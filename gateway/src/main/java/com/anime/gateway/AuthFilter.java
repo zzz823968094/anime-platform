@@ -18,7 +18,7 @@ import java.util.List;
 public class AuthFilter implements GlobalFilter, Ordered {
 
     private static final List<String> WHITE_LIST = List.of(
-            "/test",
+            "/api/danmaku/*",
             "/api/user/list",
             "/api/user/count",
             "/api/video/totalCount",
