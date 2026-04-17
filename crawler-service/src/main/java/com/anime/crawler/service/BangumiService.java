@@ -1,7 +1,7 @@
 package com.anime.crawler.service;
 
-import com.anime.crawler.entity.Anime;
-import com.anime.crawler.mapper.AnimeMapper;
+import com.anime.crawler.entity.AnimeTable;
+import com.anime.crawler.mapper.AnimeTableMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BangumiService {
 
-    private final AnimeMapper animeMapper;
+    private final AnimeTableMapper animeTableMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -29,24 +29,24 @@ public class BangumiService {
      */
     public void fillMissingCovers() {
         // 查找封面为空的番剧
-        List<Anime> animes = animeMapper.selectList(
-                new LambdaQueryWrapper<Anime>()
-                        .isNull(Anime::getCoverImage)
-                        .or()
-                        .eq(Anime::getCoverImage, "")
+        List<AnimeTable> animes = animeTableMapper.selectList(
+                new LambdaQueryWrapper<AnimeTable>()
+                        .and(w -> w.isNull(AnimeTable::getVodPic)
+                                .or()
+                                .eq(AnimeTable::getVodPic, ""))
         );
         log.info("[Bangumi] 共{}部番剧缺少封面，开始补全...", animes.size());
 
         int success = 0;
         int fail = 0;
-        for (Anime anime : animes) {
+        for (AnimeTable anime : animes) {
             try {
                 Thread.sleep(1000); // 每次请求间隔1秒
                 boolean ok = fillCover(anime);
                 if (ok) success++;
                 else fail++;
             } catch (Exception e) {
-                log.error("[Bangumi] 处理番剧失败: {}, 错误: {}", anime.getTitle(), e.getMessage());
+                log.error("[Bangumi] 处理番剧失败: {}, 错误: {}", anime.getVodName(), e.getMessage());
                 fail++;
             }
         }
@@ -56,8 +56,8 @@ public class BangumiService {
     /**
      * 补全单部番剧的封面和简介
      */
-    public boolean fillCover(Anime anime) throws Exception {
-        String title = anime.getTitle()
+    public boolean fillCover(AnimeTable anime) throws Exception {
+        String title = anime.getVodName()
                 .replaceAll("第[一二三四五六七八九十百千万\\d]+季", "")
                 .replaceAll("\\s*\\(\\d{4}\\)\\s*", "")
                 .replaceAll("\\s*(日语版|普通话版|国语版)\\s*", "")
@@ -110,13 +110,13 @@ public class BangumiService {
         }
 
         // 更新数据库
-        anime.setCoverImage(cover);
-        if (synopsis != null && !synopsis.isEmpty()) anime.setSynopsis(synopsis);
-        if (rating > 0) anime.setRating(rating);
-        if (!bangumiId.isEmpty()) anime.setBangumiId(bangumiId);
-        animeMapper.updateById(anime);
+        anime.setVodPic(cover);
+        if (synopsis != null && !synopsis.isEmpty()) anime.setVodContent(synopsis);
+        if (rating > 0) anime.setVodScore(java.math.BigDecimal.valueOf(rating));
+        if (!bangumiId.isEmpty()) anime.setVodDoubanId(Integer.parseInt(bangumiId));
+        animeTableMapper.updateById(anime);
 
-        log.debug("[Bangumi] 补全成功: {} -> {}", anime.getTitle(), cover);
+        log.debug("[Bangumi] 补全成功: {} -> {}", anime.getVodName(), cover);
         return true;
     }
 }

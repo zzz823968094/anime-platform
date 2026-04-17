@@ -1,380 +1,281 @@
 package com.anime.crawler.service;
 
-import com.anime.crawler.entity.Anime;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import com.anime.common.utils.IdUtil;
+import com.anime.crawler.entity.AnimeTable;
 import com.anime.crawler.entity.Video;
-import com.anime.crawler.mapper.AnimeMapper;
+import com.anime.crawler.mapper.AnimeTableMapper;
 import com.anime.crawler.mapper.VideoMapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CrawlerService {
+    private static final String BASE_VIDEO_URL = "https://hhzyjiexi.com/play/?url=";
+    private static final String CRAWLER_BY_TYPE_URL = "https://hhzyapi.com/api.php/provide/vod/from/hhm3u8/at/json?ac=videolist&t=";
+    // 批量插入的大小,避免一次性插入过多数据导致内存溢出或数据库连接超时
+    private static final int BATCH_SIZE = 100;
+    // 预编译正则表达式,避免重复编译
+    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("\\D+");
 
-    private final AnimeMapper animeMapper;
+    // 线程池用于并发请求
+    // 生产环境建议: 根据服务器CPU核心数动态调整,避免过度占用资源影响其他服务
+    // 公式: 线程数 = CPU核心数 * (1 + IO等待时间/CPU计算时间)
+    // 对于IO密集型任务(如HTTP请求),可以适当增加线程数,但不宜过多
+    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+    private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
-    private final StringRedisTemplate redisTemplate;
 
-    private static final String BASE_URL   = "https://huohuzy.com";
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
-
-    private static final int PAGES_JP = 44;
-    private static final int PAGES_US = 9;
-    private static final int PAGES_CN = 47;
-    private static final int STOP_AFTER_UNCHANGED = 10;
-
-    // 失败记录的 Redis Set key 前缀
-    private static final String FAILED_KEY_PREFIX = "crawler:failed:";
-
-    // ─── 定时任务 ───────────────────────────────────────────────────────
-
-    @Scheduled(cron = "0 0 */3 * * *")
-    public void crawlLatestJP() {
-        log.info("[爬虫] 定时：增量爬取日本动漫...");
-        crawlIncremental(25);
+    @Async
+    public void crawlNow(Integer type,Integer hour) {
+        hour = hour == null ? 24 : hour;
+        String firstPageResult = fetchData(CRAWLER_BY_TYPE_URL + type + "&pg=1&h=" + hour);
+        Crawler(firstPageResult, type);
     }
 
-    @Scheduled(cron = "0 0 */6 * * *")
-    public void crawlLatestOther() {
-        log.info("[爬虫] 定时：增量爬取欧美/中国动漫...");
-        crawlIncremental(26);
-        crawlIncremental(24);
+    @Async
+    public void CrawlerByType(int type) {
+        String firstPageResult = fetchData(CRAWLER_BY_TYPE_URL + type + "&pg=1");
+        Crawler(firstPageResult, type);
     }
 
-    // ─── 手动触发 ────────────────────────────────────────────────────────
-
-    public void crawlLatest() {
-        log.info("[爬虫] 手动增量爬取所有分类...");
-        crawlIncremental(25);
-        crawlIncremental(26);
-        crawlIncremental(24);
-        log.info("[爬虫] 增量爬取完成");
-    }
-
-    public void crawlAll() {
-        log.info("[爬虫] 全量爬取开始...");
-        crawlType(25, PAGES_JP);
-        crawlType(26, PAGES_US);
-        crawlType(24, PAGES_CN);
-        log.info("[爬虫] 全量爬取完成");
-    }
-
-    public void crawlType(int type, int maxPages) {
-        log.info("[爬虫] 全量爬取 type={}, 共{}页", type, maxPages);
-        for (int page = 1; page <= maxPages; page++) {
-            crawlPage(type, page, false);
-            sleep(2000);
-        }
-        log.info("[爬虫] type={} 全量完成", type);
-    }
-
-    public void crawlIncremental(int type) {
-        int maxPages = type == 25 ? PAGES_JP : type == 26 ? PAGES_US : PAGES_CN;
-        int unchangedCount = 0;
-
-        for (int page = 1; page <= maxPages; page++) {
-            int unchanged = crawlPage(type, page, true);
-            unchangedCount += unchanged;
-            log.info("[增量] type={} 第{}页，无变化累计{}个", type, page, unchangedCount);
-
-            if (unchangedCount >= STOP_AFTER_UNCHANGED) {
-                log.info("[增量] type={} 连续{}个无变化，停止于第{}页", type, unchangedCount, page);
-                break;
+    /**
+     * 根据类型爬取动漫数据
+     * 注意: 爬取过程会占用较多系统资源(CPU、网络、数据库连接)
+     * 建议在业务低峰期执行,或限制并发线程数以减少对其他服务的影响
+     *
+     */
+    public void Crawler(String firstPageResult, int type) {
+        try {
+            if (StrUtil.isEmpty(firstPageResult)) {
+                log.warn("爬取类型 {} 失败: 第一页数据为空", type);
+                return;
             }
-            sleep(2000);
+
+            JSONObject firstObject = JSONUtil.parseObj(firstPageResult);
+            if (firstObject.getInt("code") != 1) {
+                log.warn("爬取类型 {} 失败: API返回错误码 {}", type, firstObject.getInt("code"));
+                return;
+            }
+
+            int totalPages = firstObject.getInt("pagecount");
+            JSONArray firstList = JSONUtil.parseArray(firstObject.get("list"));
+
+            // 处理第一页数据
+            processList(firstList);
+            log.info("类型 {} 第 1/{} 页处理完成", type, totalPages);
+
+            // 并发处理剩余页面
+            if (totalPages > 1) {
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                for (int i = 2; i <= totalPages; i++) {
+                    final int currentPage = i;
+                    // 添加延迟,避免过快请求导致目标服务器拒绝服务或占用过多本地资源
+                    try {
+                        Thread.sleep(500); // 每页之间间隔500ms,降低并发压力
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                        try {
+                            String result = fetchData(CRAWLER_BY_TYPE_URL + type + "&pg=" + currentPage);
+                            if (StrUtil.isNotEmpty(result)) {
+                                JSONObject object = JSONUtil.parseObj(result);
+                                if (object.getInt("code") == 1) {
+                                    JSONArray list = JSONUtil.parseArray(object.get("list"));
+                                    processList(list);
+                                    log.info("类型 {} 第 {}/{} 页处理完成", type, currentPage, totalPages);
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("类型 {} 第 {} 页处理失败", type, currentPage, e);
+                        }
+                    }, executorService);
+                    futures.add(future);
+                }
+
+                // 等待所有并发任务完成
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            }
+
+            log.info("类型 {} 爬取完成,共 {} 页", type, totalPages);
+        } catch (Exception e) {
+            log.error("爬取类型 {} 时发生异常", type, e);
+        }
+        // 注意: 不要在此处关闭线程池,线程池应该在应用关闭时统一销毁
+        // shutdown()方法仅用于Spring容器销毁Bean时调用
+    }
+
+    /**
+     * 发起HTTP请求并获取结果,带有重试机制
+     */
+    private String fetchData(String url) {
+        int maxRetries = 3;
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                String result = HttpUtil.get(url, 10000); // 10秒超时
+                if (StrUtil.isNotEmpty(result)) {
+                    return result;
+                }
+            } catch (Exception e) {
+                log.warn("请求失败,第 {} 次重试: {}", i + 1, url, e);
+                try {
+                    Thread.sleep(1000 * (i + 1)); // 递增延迟重试
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 处理动漫列表数据
+     */
+    public void processList(JSONArray list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        List<AnimeTable> animeBatch = new ArrayList<>(BATCH_SIZE);
+        List<Video> allVideos = new ArrayList<>();
+
+        for (int i = 0; i < list.size(); i++) {
+            try {
+                JSONObject object = JSONUtil.parseObj(list.get(i));
+                AnimeTable bean = JSONUtil.toBean(object, AnimeTable.class);
+                long id = IdUtil.nextId();
+                bean.setId(id);
+                String vodContent = object.getStr("vod_play_url");
+                if (StrUtil.isNotEmpty(vodContent)) {
+                    List<Video> videos = processVideoList(id, vodContent);
+                    allVideos.addAll(videos);
+                }
+                bean.setVodTotal(allVideos.size());
+                animeBatch.add(bean);
+
+                // 达到批量大小时执行插入
+                if (animeBatch.size() >= BATCH_SIZE) {
+                    insertBatch(animeBatch, allVideos);
+                    animeBatch.clear();
+                    allVideos.clear();
+                }
+            } catch (Exception e) {
+                log.error("处理动漫数据时发生异常", e);
+            }
+        }
+
+        // 插入剩余数据
+        if (!animeBatch.isEmpty()) {
+            insertBatch(animeBatch, allVideos);
         }
     }
 
     /**
-     * 重试所有失败记录（接口 /crawler/retry/{type}）
-     * 从 Redis 取出失败的 sourceId 列表，逐个重新爬取
+     * 批量插入动漫和视频数据
      */
-    public int retryFailed(int type) {
-        String key = FAILED_KEY_PREFIX + type;
-        Set<String> failedIds = redisTemplate.opsForSet().members(key);
+    private void insertBatch(List<AnimeTable> animeList, List<Video> videoList) {
+        try {
+            if (!animeList.isEmpty()) {
+                // 分批插入动漫数据
+                List<List<AnimeTable>> animePartitions = CollUtil.split(animeList, BATCH_SIZE);
+                for (List<AnimeTable> partition : animePartitions) {
+                    animeTableMapper.insert(partition);
+                }
+            }
 
-        if (failedIds == null || failedIds.isEmpty()) {
-            log.info("[重试] type={} 没有失败记录", type);
-            return 0;
+            if (!videoList.isEmpty()) {
+                // 分批插入视频数据
+                List<List<Video>> videoPartitions = CollUtil.split(videoList, BATCH_SIZE);
+                for (List<Video> partition : videoPartitions) {
+                    videoMapper.insert(partition);
+                }
+            }
+        } catch (Exception e) {
+            log.error("批量插入数据时发生异常", e);
         }
 
-        log.info("[重试] type={} 开始重试，共{}条", type, failedIds.size());
-        int successCount = 0;
+    }
 
-        for (String sourceId : failedIds) {
+    /**
+     * 处理视频列表
+     */
+    public List<Video> processVideoList(Long animeId, String vodContent) {
+        List<Video> list = new ArrayList<>();
+        String[] split = vodContent.split("#");
+
+        for (String url : split) {
             try {
-                sleep(1000);
-                String url = BASE_URL + "/index.php/vod/detail/id/" + sourceId + ".html";
-                boolean changed = crawlDetail(url, sourceId, type);
-                if (changed) {
-                    redisTemplate.opsForSet().remove(key, sourceId);
-                    successCount++;
-                    log.info("[重试] sourceId={} 成功", sourceId);
+                String[] split1 = url.split("\\$", 2); // 限制分割次数为2
+                if (split1.length < 2) {
+                    log.warn("视频链接格式错误: {}", url);
+                    continue;
                 }
-            } catch (Exception e) {
-                log.error("[重试] sourceId={} 仍失败: {}", sourceId, e.getMessage());
-            }
-        }
 
-        log.info("[重试] type={} 完成，成功{}/{}条", type, successCount, failedIds.size());
-        return successCount;
-    }
+                Video video = new Video();
+                video.setId(IdUtil.nextId());
+                video.setTitle(split1[0]);
+                video.setAnimeId(animeId);
+                video.setStatus(1);
+                video.setM3u8Url(BASE_VIDEO_URL + split1[1]);
 
-    /** 查询失败记录数量 */
-    public long getFailedCount(int type) {
-        Long size = redisTemplate.opsForSet().size(FAILED_KEY_PREFIX + type);
-        return size == null ? 0 : size;
-    }
-
-    // ─── 核心爬取 ─────────────────────────────────────────────────────────
-
-    public int crawlPage(int type, int pageNum, boolean returnUnchanged) {
-        int unchanged = 0;
-        try {
-            String listUrl = BASE_URL + "/index.php/vod/type/id/" + type + "/page/" + pageNum + ".html";
-            Document listDoc = Jsoup.connect(listUrl)
-                    .userAgent(USER_AGENT)
-                    .timeout(15000)
-                    .get();
-
-            Elements links = listDoc.select("a[href*=/vod/detail/id/]");
-            log.info("[爬虫] type={} 第{}页，找到{}个番剧", type, pageNum, links.size());
-
-            for (Element link : links) {
-                String href = link.attr("href");
-                if (!href.contains("/vod/detail/id/")) continue;
-                String sourceId = extractSourceId(href);
-                if (sourceId == null) continue;
-
-                try {
-                    sleep(1000);
-                    boolean changed = crawlDetail(BASE_URL + href, sourceId, type);
-                    if (!changed) unchanged++;
-                } catch (Exception e) {
-                    log.error("[爬虫] 详情页失败: {}, 错误: {}", href, e.getMessage());
-                    // 记录失败，等待后续重试
-                    recordFailed(type, sourceId);
-                }
-            }
-        } catch (Exception e) {
-            log.error("[爬虫] 列表页失败: type={}, page={}, 错误: {}", type, pageNum, e.getMessage());
-        }
-        return unchanged;
-    }
-
-    private void recordFailed(int type, String sourceId) {
-        try {
-            redisTemplate.opsForSet().add(FAILED_KEY_PREFIX + type, sourceId);
-        } catch (Exception e) {
-            log.warn("[爬虫] 记录失败 sourceId 出错: {}", e.getMessage());
-        }
-    }
-
-    private boolean crawlDetail(String url, String sourceId, int type) throws Exception {
-        Document doc = Jsoup.connect(url)
-                .userAgent(USER_AGENT)
-                .timeout(15000)
-                .get();
-
-        // 标题
-        String title = "";
-        Element titleEl = doc.selectFirst("h2");
-        if (titleEl != null) title = titleEl.text().trim();
-        if (title.isEmpty()) return false;
-
-        // 封面
-        String coverImage = "";
-        Element coverEl = doc.selectFirst("div.vod-img img");
-        if (coverEl != null) {
-            coverImage = coverEl.attr("src");
-            if (coverImage.isEmpty()) coverImage = coverEl.attr("data-original");
-        }
-
-        // 简介
-        String synopsis = "";
-        Element synopsisEl = doc.selectFirst("div.vod-introduce p");
-        if (synopsisEl != null) {
-            synopsis = synopsisEl.text().trim();
-        }
-
-        // 完结状态 & 评分
-        int status = 1;
-        double rating = 0.0;
-
-        Element vodTitle = doc.selectFirst("div.vod-title");
-        if (vodTitle != null) {
-            Element statusSpan = vodTitle.selectFirst("span");
-            if (statusSpan != null) {
-                String spanText = statusSpan.text();
-                if (spanText.contains("完结") || spanText.contains("全集")) {
-                    status = 2;
-                }
-            }
-            Element ratingLabel = vodTitle.selectFirst("label");
-            if (ratingLabel != null) {
-                try {
-                    rating = Double.parseDouble(ratingLabel.text().trim());
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-
-        // 集数解析
-        List<Video> episodes = parseEpisodes(doc, sourceId);
-        if (episodes.isEmpty()) return false;
-
-        // 番剧入库或更新
-        Anime existing = animeMapper.selectOne(
-                new LambdaQueryWrapper<Anime>().eq(Anime::getSourceId, sourceId)
-        );
-
-        Long animeId;
-        boolean changed;
-
-        if (existing == null) {
-            Anime anime = new Anime();
-            anime.setTitle(title);
-            anime.setCoverImage(coverImage);
-            anime.setSynopsis(synopsis);
-            anime.setSourceId(sourceId);
-            anime.setType(String.valueOf(type));
-            anime.setStatus(status);
-            anime.setCurrentEpisode(episodes.size());
-            anime.setViewCount(0);
-            anime.setFavoriteCount(0);
-            if (rating > 0) anime.setRating(rating);
-            animeMapper.insert(anime);
-            animeId = anime.getId();
-            changed = true;
-            log.info("[爬虫] 新番剧: {} (type={}, status={})", title, type, status);
-        } else {
-            animeId = existing.getId();
-            changed = existing.getCurrentEpisode() == null
-                    || existing.getCurrentEpisode() != episodes.size()
-                    || existing.getStatus() != status;
-            existing.setCurrentEpisode(episodes.size());
-            existing.setStatus(status);
-            if (existing.getType() == null || existing.getType().isEmpty()) {
-                existing.setType(String.valueOf(type));
-            }
-            if ((existing.getSynopsis() == null || existing.getSynopsis().isBlank())
-                    && !synopsis.isBlank()) {
-                existing.setSynopsis(synopsis);
-                changed = true;
-            }
-            if (rating > 0 && (existing.getRating() == null
-                    || existing.getRating().doubleValue() == 0)) {
-                existing.setRating(rating);
-            }
-            animeMapper.updateById(existing);
-        }
-
-        if (changed) {
-            for (Video ep : episodes) {
-                ep.setAnimeId(animeId);
-                Video existingEp = videoMapper.selectOne(
-                        new LambdaQueryWrapper<Video>()
-                                .eq(Video::getAnimeId, animeId)
-                                .eq(Video::getEpisode, ep.getEpisode())
-                );
-                if (existingEp == null) {
-                    ep.setViewCount(0);
-                    ep.setStatus(1);
-                    videoMapper.insert(ep);
+                // 使用预编译的正则表达式提取数字
+                String number = NON_DIGIT_PATTERN.matcher(split1[0]).replaceAll("");
+                if (StrUtil.isNotEmpty(number)) {
+                    video.setEpisode(Integer.parseInt(number));
                 } else {
-                    existingEp.setM3u8Url(ep.getM3u8Url());
-                    existingEp.setTitle(ep.getTitle());
-                    videoMapper.updateById(existingEp);
+                    video.setEpisode(0);
                 }
+
+                list.add(video);
+            } catch (Exception e) {
+                log.error("处理视频链接时发生异常: {}", url, e);
             }
         }
 
-        return changed;
+        return list;
     }
 
-    // ─── 解析集数 ────────────────────────────────────────────────────────
-
-    private List<Video> parseEpisodes(Document doc, String sourceId) {
-        List<Video> episodes = new ArrayList<>();
-        boolean inM3u8Block = false;
-
-        for (Element el : doc.getAllElements()) {
-            String text = el.ownText();
-            if (text.contains("hhm3u8") || text.contains("豪华m3u8")) {
-                inM3u8Block = true;
-                continue;
-            }
-            if (inM3u8Block && text.contains("$")) {
-                String[] parts = text.split("\\$");
-                if (parts.length == 2) {
-                    String epTitle = parts[0].trim();
-                    String m3u8Url = parts[1].trim();
-                    if (m3u8Url.contains("index.m3u8")) {
-                        Video video = new Video();
-                        video.setEpisode(parseEpisodeNumber(epTitle));
-                        video.setTitle(epTitle);
-                        video.setM3u8Url(m3u8Url);
-                        video.setDuration(0);
-                        episodes.add(video);
-                    }
-                }
-            }
-            if (inM3u8Block && (text.contains("hhyun") || text.contains("豪华云"))) {
-                break;
-            }
-        }
-
-        if (episodes.isEmpty()) {
-            Elements links = doc.select("a[href*=index.m3u8]");
-            for (Element link : links) {
-                String href    = link.attr("href");
-                String epTitle = link.text().split("\\$")[0].trim();
-                Video video    = new Video();
-                video.setEpisode(parseEpisodeNumber(epTitle));
-                video.setTitle(epTitle);
-                video.setM3u8Url(href);
-                video.setDuration(0);
-                episodes.add(video);
-            }
-        }
-
-        return episodes;
-    }
-
-    // ─── 工具方法 ────────────────────────────────────────────────────────
-
-    private String extractSourceId(String href) {
+    /**
+     * 优雅关闭线程池(在应用关闭时由Spring容器调用)
+     * 使用@PreDestroy注解确保Bean销毁时正确释放资源
+     */
+    @PreDestroy
+    public void shutdown() {
+        log.info("正在关闭线程池");
+        executorService.shutdown();
         try {
-            String[] parts = href.split("/id/");
-            if (parts.length < 2) return null;
-            return parts[1].split("\\.")[0].split("\\?")[0].trim();
-        } catch (Exception e) {
-            return null;
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            log.info("线程池关闭失败，重新关闭中");
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
         }
+        log.info("线程池已关闭");
     }
 
-    private int parseEpisodeNumber(String title) {
-        try {
-            String num = title.replaceAll("[^0-9]", "");
-            return num.isEmpty() ? 1 : Integer.parseInt(num);
-        } catch (Exception e) {
-            return 1;
-        }
-    }
-
-    private void sleep(long ms) {
-        try { Thread.sleep(ms); } catch (InterruptedException ignored) {}
-    }
 }

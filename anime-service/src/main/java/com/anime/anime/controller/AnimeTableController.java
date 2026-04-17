@@ -1,12 +1,13 @@
 package com.anime.anime.controller;
 
-import com.anime.anime.entity.Anime;
+import com.anime.anime.entity.AnimeTable;
 import com.anime.anime.entity.SearchLog;
 import com.anime.anime.entity.VisitLog;
 import com.anime.anime.mapper.SearchLogMapper;
 import com.anime.anime.mapper.VisitLogMapper;
-import com.anime.anime.service.AnimeService;
+import com.anime.anime.service.AnimeTableService;
 import com.anime.common.result.Result;
+import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/anime")
 @RequiredArgsConstructor
-public class AnimeController {
+public class AnimeTableController {
 
-    private final AnimeService animeService;
+    private final AnimeTableService animeService;
     private final SearchLogMapper searchLogMapper;
     private final VisitLogMapper visitLogMapper;
 
@@ -36,25 +37,27 @@ public class AnimeController {
             @RequestParam(value = "genre", required = false) String genre,
             @RequestParam(value = "sort", defaultValue = "latest") String sort,
             @RequestParam(value = "keyword", required = false) String keyword) {
-        Page<Anime> result = animeService.listAnime(page, size, type, status, year, genre, sort, keyword);
+        Page<AnimeTable> result = animeService.listAnime(page, size, type, status, year, genre, sort, keyword);
         return Result.ok(result);
     }
 
     @GetMapping("/{id}")
-    public Result<?> detail(@PathVariable("id") Long id) {
-        Anime anime = animeService.getById(id);
+    public Result<?> detail(@PathVariable Long id) {
+        AnimeTable anime = animeService.getById(id);
         if (anime == null) return Result.fail(404, "番剧不存在");
-        anime.setViewCount(anime.getViewCount() + 1);
+        anime.setVodHits(anime.getVodHits() + 1);
+        anime.setVodHitsDay(anime.getVodHitsDay() + 1);
+        anime.setVodHitsWeek(anime.getVodHitsWeek() + 1);
+        anime.setVodHitsMonth(anime.getVodHitsMonth() + 1);
         animeService.updateById(anime);
         return Result.ok(anime);
     }
-
     @DeleteMapping("/{id}")
     public Result<?> delete(
-            @PathVariable("id") Long id) {
-        Anime anime = animeService.getById(id);
+            @PathVariable Long id) {
+        AnimeTable anime = animeService.getById(id);
         if (anime == null) return Result.fail(404, "番剧不存在");
-        anime.setStatus(0);
+        anime.setVodStatus(0);
         animeService.updateById(anime);
         return Result.ok("已下线");
     }
@@ -62,9 +65,9 @@ public class AnimeController {
     @PutMapping("/{id}/online")
     public Result<?> online(
             @PathVariable("id") Long id) {
-        Anime anime = animeService.getById(id);
+        AnimeTable anime = animeService.getById(id);
         if (anime == null) return Result.fail(404, "番剧不存在");
-        anime.setStatus(1);
+        anime.setVodStatus(1);
         animeService.updateById(anime);
         return Result.ok("已上线");
     }
@@ -120,9 +123,9 @@ public class AnimeController {
             @RequestParam(value = "size", defaultValue = "12") int size,
             @RequestParam(value = "limit", defaultValue = "0") int limit) {
         int count = limit > 0 ? limit : size;
-        List<Anime> list = animeService.lambdaQuery()
-                .ne(Anime::getStatus, 0)          // 过滤已下线
-                .orderByDesc(Anime::getUpdatedAt)
+        List<AnimeTable> list = animeService.lambdaQuery()
+                .ne(AnimeTable::getVodStatus, 0)          // 过滤已下线
+                .orderByDesc(AnimeTable::getUpdateAt)
                 .last("limit " + count)
                 .list();
         return Result.ok(list);
@@ -138,23 +141,23 @@ public class AnimeController {
 
         // 总番剧数（排除已下线）
         long totalAnime = animeService.lambdaQuery()
-                .ne(Anime::getStatus, 0)
+                .ne(AnimeTable::getVodStatus, 0)
                 .count();
         data.put("totalAnime", totalAnime);
 
         // 总播放量（所有番剧 view_count 之和）
-        List<Anime> all = animeService.lambdaQuery()
-                .select(Anime::getViewCount)
+        List<AnimeTable> all = animeService.lambdaQuery()
+                .select(AnimeTable::getVodHits)
                 .list();
         long totalView = all.stream()
-                .mapToLong(a -> a.getViewCount() == null ? 0 : a.getViewCount())
+                .mapToLong(a -> a.getVodHits() == null ? 0 : a.getVodHits())
                 .sum();
         data.put("totalView", totalView);
 
         // 各分类番剧数
-        long jpCount = animeService.lambdaQuery().eq(Anime::getType, "25").ne(Anime::getStatus, 0).count();
-        long usCount = animeService.lambdaQuery().eq(Anime::getType, "26").ne(Anime::getStatus, 0).count();
-        long cnCount = animeService.lambdaQuery().eq(Anime::getType, "24").ne(Anime::getStatus, 0).count();
+        long jpCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "25").ne(AnimeTable::getVodStatus, 0).count();
+        long usCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "26").ne(AnimeTable::getVodStatus, 0).count();
+        long cnCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "24").ne(AnimeTable::getVodStatus, 0).count();
         data.put("jpCount", jpCount);
         data.put("usCount", usCount);
         data.put("cnCount", cnCount);
@@ -181,7 +184,7 @@ public class AnimeController {
      * 同一 IP 同一页面同一天只记录一次，防刷
      */
     @PostMapping("/visit")
-    public Result<?> reportVisit(@RequestBody java.util.Map<String, String> body,
+    public Result<?> reportVisit(@RequestBody Map<String, String> body,
                                  @RequestHeader(value = "X-User-Id", required = false) Long userId,
                                  HttpServletRequest request) {
         String page = body.get("page");
@@ -197,7 +200,7 @@ public class AnimeController {
         log.setIp(ip);
         log.setUserId(userId);
         log.setVisitDate(java.time.LocalDate.now());
-        log.setCreatedAt(java.time.LocalDateTime.now());
+        log.setCreatedAt(LocalDateTime.now());
         visitLogMapper.insert(log);
         return Result.ok("ok");
     }
@@ -208,7 +211,7 @@ public class AnimeController {
      */
     @GetMapping("/visit/stats")
     public Result<?> visitStats() {
-        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        Map<String, Object> data = new HashMap<>();
         data.put("todayUV",  visitLogMapper.todayUV());
         data.put("todayPV",  visitLogMapper.todayPV());
         data.put("trend",    visitLogMapper.dailyUV(7));

@@ -32,7 +32,7 @@ public class CronTaskService {
 
     private final CronTaskMapper taskMapper;
     private final CronTaskLogMapper taskLogMapper;
-    private final CrawlerService crawlerService;
+    private final CrawlerService2 crawlerService;
     
     private final ThreadPoolTaskScheduler taskScheduler;
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();

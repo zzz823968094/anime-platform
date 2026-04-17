@@ -35,7 +35,7 @@ spring:
         - id: crawler-service
           uri: lb://crawler-service
           predicates:
-            - Path=/api/crawler/**
+            - Path=/api/crawler/**,/test
 
         - id: admin-service
           uri: lb://admin-service
@@ -59,6 +59,8 @@ spring:
               - "http://127.0.0.1:5173"
               - "http://127.0.0.1:3000"
               - "http://127.0.0.1:3001"
+              - "http://192.168.31.39:5173"
+              - "http://127.0.0.1:8080"
             allowedMethods:
               - GET
               - POST

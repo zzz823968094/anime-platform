@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -57,9 +58,8 @@ public class FavoriteController {
                         .eq(UserFavorite::getUserId, userId)
                         .orderByDesc(UserFavorite::getCreatedAt)
         );
-        List<Long> animeIds = favs.stream()
-                .map(UserFavorite::getAnimeId)
-                .toList();
+        List<String> animeIds = new ArrayList<>();
+        favs.forEach(item -> animeIds.add(String.valueOf(item.getAnimeId())));
         return Result.ok(animeIds);
     }
 
