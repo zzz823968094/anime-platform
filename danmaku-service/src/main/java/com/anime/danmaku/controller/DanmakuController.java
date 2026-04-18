@@ -22,7 +22,7 @@ public class DanmakuController {
      */
     @GetMapping("/{videoId}")
     public Result<?> list(
-            @PathVariable Long videoId,
+            @PathVariable("videoId") Long videoId,
             @RequestParam(value = "limit", defaultValue = "200") int limit) {
         List<Danmaku> list = danmakuMapper.selectList(
                 new LambdaQueryWrapper<Danmaku>()

@@ -103,7 +103,7 @@ public class AdminUserController {
      * 启用/禁用管理员
      */
     @PutMapping("/{id}/status")
-    public Result<?> updateStatus(@PathVariable Integer id, @RequestBody java.util.Map<String, String> request) {
+    public Result<?> updateStatus(@PathVariable("id") Integer id, @RequestBody java.util.Map<String, String> request) {
         String statusStr = request.get("status");
         if (statusStr == null || statusStr.isBlank()) {
             return Result.fail(400, "状态参数不能为空");

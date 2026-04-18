@@ -18,7 +18,10 @@ public class CrawlerController {
 
     /** 爬取所有分类最新第1页 */
     @PostMapping("/crawl-now")
-    public Result<?> crawlNow(Integer type,Integer hour) {
+    public Result<?> crawlNow(
+            @RequestParam(value = "type", required = false) Integer type,
+            @RequestParam(value = "hour", required = false) Integer hour
+    ) {
         // 直接调用服务层方法,由CrawlerService内部的线程池管理并发
         crawlerService.crawlNow(type,hour);
         return Result.ok("已启动：爬取所有分类最新数据");
@@ -29,7 +32,7 @@ public class CrawlerController {
      * type: 25=日本动漫, 26=欧美动漫, 24=中国动漫
      */
     @PostMapping("/incremental/{type}")
-    public Result<?> incremental(@PathVariable int type) {
+    public Result<?> incremental(@PathVariable("type") int type) {
         if (type != 25 && type != 26 && type != 24) {
             return Result.fail("不支持的分类 type，只允许 25/26/24");
         }

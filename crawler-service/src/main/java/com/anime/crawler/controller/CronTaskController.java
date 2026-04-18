@@ -33,7 +33,7 @@ public class CronTaskController {
      * 获取定时任务详情
      */
     @GetMapping("/{id}")
-    public Result<?> getTaskDetail(@PathVariable Long id) {
+    public Result<?> getTaskDetail(@PathVariable("id") Long id) {
         CronTask task = cronTaskService.getTaskById(id);
         if (task == null) {
             return Result.fail("任务不存在");
@@ -66,7 +66,7 @@ public class CronTaskController {
      * 更新定时任务
      */
     @PutMapping("/{id}")
-    public Result<?> updateTask(@PathVariable Long id, @RequestBody CronTask task) {
+    public Result<?> updateTask(@PathVariable("id") Long id, @RequestBody CronTask task) {
         CronTask updated = cronTaskService.updateTask(id, task);
         return Result.ok(updated);
     }
@@ -75,7 +75,7 @@ public class CronTaskController {
      * 删除定时任务
      */
     @DeleteMapping("/{id}")
-    public Result<?> deleteTask(@PathVariable Long id) {
+    public Result<?> deleteTask(@PathVariable("id") Long id) {
         cronTaskService.deleteTask(id);
         return Result.ok("删除成功");
     }
@@ -84,7 +84,7 @@ public class CronTaskController {
      * 启用/禁用定时任务
      */
     @PutMapping("/{id}/toggle")
-    public Result<?> toggleTaskEnabled(@PathVariable Long id, @RequestParam(value = "enabled") Boolean enabled) {
+    public Result<?> toggleTaskEnabled(@PathVariable("id") Long id, @RequestParam(value = "enabled") Boolean enabled) {
         cronTaskService.toggleTaskEnabled(id, enabled);
         return Result.ok(enabled ? "已启用" : "已禁用");
     }
@@ -93,7 +93,7 @@ public class CronTaskController {
      * 立即执行任务
      */
     @PostMapping("/{id}/execute")
-    public Result<?> executeTask(@PathVariable Long id) {
+    public Result<?> executeTask(@PathVariable("id") Long id) {
         cronTaskService.executeTaskNow(id);
         return Result.ok("任务已启动执行");
     }
@@ -102,7 +102,7 @@ public class CronTaskController {
      * 取消运行中的任务
      */
     @PostMapping("/{id}/cancel")
-    public Result<?> cancelTask(@PathVariable Long id) {
+    public Result<?> cancelTask(@PathVariable("id") Long id) {
         cronTaskService.cancelTask(id);
         return Result.ok("任务已取消");
     }
@@ -111,8 +111,7 @@ public class CronTaskController {
      * 快速同步（不创建任务，直接执行）
      */
     @PostMapping("/sync/{type}")
-    public Result<?> quickSync(
-            @PathVariable int type) {
+    public Result<?> quickSync(@PathVariable("type") int type) {
         if (type != 25 && type != 26 && type != 24) {
             return Result.fail("不支持的分类 type，只允许 25/26/24");
         }

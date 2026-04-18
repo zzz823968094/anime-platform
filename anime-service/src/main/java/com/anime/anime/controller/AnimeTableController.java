@@ -42,7 +42,7 @@ public class AnimeTableController {
     }
 
     @GetMapping("/{id}")
-    public Result<?> detail(@PathVariable Long id) {
+    public Result<?> detail(@PathVariable("id") Long id) {
         AnimeTable anime = animeService.getById(id);
         if (anime == null) return Result.fail(404, "番剧不存在");
         anime.setVodHits(anime.getVodHits() + 1);
@@ -53,8 +53,7 @@ public class AnimeTableController {
         return Result.ok(anime);
     }
     @DeleteMapping("/{id}")
-    public Result<?> delete(
-            @PathVariable Long id) {
+    public Result<?> delete(@PathVariable("id") Long id) {
         AnimeTable anime = animeService.getById(id);
         if (anime == null) return Result.fail(404, "番剧不存在");
         anime.setVodStatus(0);
