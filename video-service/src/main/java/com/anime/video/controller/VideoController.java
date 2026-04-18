@@ -20,7 +20,7 @@ import java.util.List;
 public class VideoController {
     private final VideoService videoService;
     private final VideoMapper videoMapper;
-    private final AnimeTableMapper animeMapper;
+    private final AnimeTableMapper animeTableMapper;
 
     @GetMapping("totalCount")
     public Result<?> totalCount() {
@@ -49,7 +49,7 @@ public class VideoController {
 
         // anime 播放量原子自增（直接 SQL，避免并发问题）
         if (video.getAnimeId() != null) {
-            animeMapper.incrementViewCount(video.getAnimeId());
+            animeTableMapper.incrementViewCount(video.getAnimeId());
         }
 
         return Result.ok(video);
