@@ -13,7 +13,12 @@ file:
   upload:
     path: /root/uploads/app-versions/
   access:
-    url: https://www.animeparadise.vip/files
+    url: https://www.animeparadise.vip/files/
+#file:
+#  upload:
+#    path: F:\UpDateProject\uploads
+#  access:
+#    url: http://192.168.10.64:8086/files/
 
 mybatis-plus:
   configuration:

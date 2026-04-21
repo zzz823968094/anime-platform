@@ -24,11 +24,11 @@ import java.util.UUID;
 @Service
 public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVersion> implements AppVersionService {
 
-    @Value("${file.upload.path:uploads/app-versions}")
+    @Value("${file.upload.path}")
     private String uploadPath;
 
-    @Value("${file.access.url:http://localhost:8086/uploads/app-versions}")
-    private String accessUrl;
+    @Value("${file.access.url}")
+    private String serverPort;
 
     @Override
     public AppVersion create(AppVersion appVersion) {
@@ -128,7 +128,9 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
 
         // 返回文件信息
         Map<String, Object> result = new HashMap<>();
-        result.put("url", accessUrl + "/" + uniqueFilename);
+        // 生成可通过 /files/ 路径访问的 URL
+        String fileUrl = serverPort + uniqueFilename;
+        result.put("url", fileUrl);
         result.put("filename", originalFilename);
         result.put("size", file.getSize());
         result.put("extension", extension);
