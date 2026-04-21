@@ -28,9 +28,19 @@ spring:
             - Path=/api/video/**
 
         - id: danmaku-service
+          uri: lb:ws://danmaku-service
+          predicates:
+            - Path=/ws/**
+            -
+        - id: danmaku-service
+          uri: lb:wss://danmaku-service
+          predicates:
+            - Path=/ws/**
+            -
+        - id: danmaku-api
           uri: lb://danmaku-service
           predicates:
-            - Path=/api/danmaku/**, /ws/**
+            - Path=/api/danmaku/**
 
         - id: crawler-service
           uri: lb://crawler-service
