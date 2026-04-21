@@ -31,7 +31,6 @@ spring:
           uri: lb:ws://danmaku-service
           predicates:
             - Path=/ws/**
-            -
 
         - id: danmaku-api
           uri: lb://danmaku-service
