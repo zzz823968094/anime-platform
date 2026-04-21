@@ -4,6 +4,16 @@ server:
 spring:
   application:
     name: admin-service
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+file:
+  upload:
+    path: /root/uploads/app-versions/
+  access:
+    url: https://www.animeparadise.vip/files
 
 mybatis-plus:
   configuration:

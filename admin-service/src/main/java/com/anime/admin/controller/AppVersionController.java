@@ -7,6 +7,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -57,5 +60,15 @@ public class AppVersionController {
     public Result<?> delete(@PathVariable Integer id) {
         appVersionService.delete(id);
         return Result.ok();
+    }
+
+    @PostMapping("/upload")
+    public Result<?> uploadFile(@RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, Object> result = appVersionService.uploadFile(file);
+            return Result.ok(result);
+        } catch (Exception e) {
+            return Result.fail(500, "文件上传失败: " + e.getMessage());
+        }
     }
 }

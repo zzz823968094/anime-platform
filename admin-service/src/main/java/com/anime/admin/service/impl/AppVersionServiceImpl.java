@@ -6,12 +6,29 @@ import com.anime.admin.service.AppVersionService;
 import com.anime.common.exception.BusinessException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVersion> implements AppVersionService {
+
+    @Value("${file.upload.path:uploads/app-versions}")
+    private String uploadPath;
+
+    @Value("${file.access.url:http://localhost:8086/uploads/app-versions}")
+    private String accessUrl;
 
     @Override
     public AppVersion create(AppVersion appVersion) {
@@ -76,5 +93,46 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
                         .eq(AppVersion::getPlatform, platform)
                         .eq(AppVersion::getVersionCode, versionCode)
         ) > 0;
+    }
+
+    @Override
+    public Map<String, Object> uploadFile(MultipartFile file) throws Exception {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(400, "文件不能为空");
+        }
+
+        // 验证文件类型（只允许 APK、IPA 等安装包）
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null) {
+            throw new BusinessException(400, "文件名不能为空");
+        }
+        
+        String extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        if (!(extension.equals(".apk") || extension.equals(".ipa") || extension.equals(".exe") || extension.equals(".dmg"))) {
+            throw new BusinessException(400, "只支持上传 .apk, .ipa, .exe, .dmg 格式的文件");
+        }
+
+        // 生成唯一文件名
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String uniqueFilename = UUID.randomUUID().toString().replace("-", "") + "_" + timestamp + extension;
+        
+        // 创建上传目录
+        Path uploadDir = Paths.get(uploadPath);
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+
+        // 保存文件
+        Path filePath = uploadDir.resolve(uniqueFilename);
+        Files.copy(file.getInputStream(), filePath);
+
+        // 返回文件信息
+        Map<String, Object> result = new HashMap<>();
+        result.put("url", accessUrl + "/" + uniqueFilename);
+        result.put("filename", originalFilename);
+        result.put("size", file.getSize());
+        result.put("extension", extension);
+        
+        return result;
     }
 }
