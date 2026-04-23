@@ -41,7 +41,9 @@ public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTa
     public Page<AnimeTable> search(String keyword, int page, int size) {
         LambdaQueryWrapper<AnimeTable> wrapper = new LambdaQueryWrapper<>();
         wrapper.ne(AnimeTable::getVodStatus, 0);
-        wrapper.and(w -> w.like(AnimeTable::getVodName, keyword));
+        if(null != keyword){
+            wrapper.and(w -> w.like(AnimeTable::getVodName, keyword));
+        }
         wrapper.orderByDesc(AnimeTable::getUpdateAt);
         return baseMapper.selectPage(new Page<>(page, size), wrapper);
     }
