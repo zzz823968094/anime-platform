@@ -38,7 +38,7 @@ public class CarouselController {
         List<Carousel> carouselList = carouselService.list(wrapper);
         List<AnimeTable> list;
         if(null == carouselList || carouselList.isEmpty()){
-            list = animeTableService.search(null, 1, 10).getRecords();
+            list = animeTableService.search(null, 1, 5).getRecords();
         }else{
             list = new ArrayList<>();
             carouselList.forEach(it->{
