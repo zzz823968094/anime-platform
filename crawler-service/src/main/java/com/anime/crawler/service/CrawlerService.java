@@ -44,7 +44,6 @@ public class CrawlerService {
 
     private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
-
     @Async
     public void crawlNow(Integer type,Integer hour) {
         hour = hour == null ? 24 : hour;
@@ -301,21 +300,39 @@ public class CrawlerService {
     public List<Video> processVideoList(Long animeId, String vodContent) {
         List<Video> list = new ArrayList<>();
         String[] split = vodContent.split("#");
+        
         for (String url : split) {
             try {
-                String[] split1 = url.split("\\$", 2); // 限制分割次数为2
+                // 先去除首尾空白字符和制表符,避免分割失败
+                String trimmedUrl = url.trim();
+                if (StrUtil.isEmpty(trimmedUrl)) {
+                    continue;
+                }
+                
+                String[] split1 = trimmedUrl.split("\\$", 2); // 限制分割次数为2
                 if (split1.length < 2) {
                     log.warn("视频链接格式错误: {}", url);
                     continue;
                 }
+                
+                // 清理标题中的空白字符和制表符
+                String title = split1[0].trim().replaceAll("\\s+", "");
+                String videoUrl = split1[1].trim();
+                
+                if (StrUtil.isEmpty(title) || StrUtil.isEmpty(videoUrl)) {
+                    log.warn("视频标题或URL为空: {}", url);
+                    continue;
+                }
+                
                 Video video = new Video();
                 video.setId(IdUtil.nextId());
-                video.setTitle(split1[0]);
+                video.setTitle(title);
                 video.setAnimeId(animeId);
                 video.setStatus(1);
-                video.setM3u8Url(BASE_VIDEO_URL + split1[1]);
+                video.setM3u8Url(BASE_VIDEO_URL + videoUrl);
+                
                 // 使用预编译的正则表达式提取数字
-                String number = NON_DIGIT_PATTERN.matcher(split1[0]).replaceAll("");
+                String number = NON_DIGIT_PATTERN.matcher(title).replaceAll("");
                 if (StrUtil.isNotEmpty(number)) {
                     video.setEpisode(Integer.parseInt(number));
                 } else {
