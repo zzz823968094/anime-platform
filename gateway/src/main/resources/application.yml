@@ -6,6 +6,8 @@ spring:
     web-application-type: reactive
   application:
     name: gateway
+  codec:
+    max-in-memory-size: 100MB
   cloud:
     nacos:
       discovery:
