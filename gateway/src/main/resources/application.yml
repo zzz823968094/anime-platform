@@ -7,7 +7,7 @@ spring:
   application:
     name: gateway
   codec:
-    max-in-memory-size: 100MB
+    max-in-memory-size: 500MB
   cloud:
     nacos:
       discovery:
