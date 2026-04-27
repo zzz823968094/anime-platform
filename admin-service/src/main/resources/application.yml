@@ -5,6 +5,12 @@ server:
     max-swallow-size: -1        # 不限制请求体大小
     async:
       request-timeout: 300000   # 异步请求超时5分钟
+    threads:
+      max: 200                  # 最大线程数
+      min-spare: 20             # 最小空闲线程数
+  servlet:
+    session:
+      timeout: 300s             # 会话超时5分钟
 
 spring:
   application:

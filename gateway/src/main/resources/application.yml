@@ -51,6 +51,9 @@ spring:
           metadata:
             response-timeout: 300000  # 5分钟超时，适用于大文件上传
             connect-timeout: 30000    # 30秒连接超时
+      httpclient:
+        connect-timeout: 30000        # 全局连接超时30秒
+        response-timeout: 300000      # 全局响应超时5分钟，适用于大文件上传
       globalcors:
         cors-configurations:
           '[/**]':
