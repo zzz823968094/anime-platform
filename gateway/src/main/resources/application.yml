@@ -48,6 +48,9 @@ spring:
           uri: lb://admin-service
           predicates:
             - Path=/api/admin/**
+          metadata:
+            response-timeout: 300000  # 5分钟超时，适用于大文件上传
+            connect-timeout: 30000    # 30秒连接超时
       globalcors:
         cors-configurations:
           '[/**]':

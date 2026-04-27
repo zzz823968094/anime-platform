@@ -1,5 +1,10 @@
 server:
   port: 8086
+  tomcat:
+    connection-timeout: 300000  # 5分钟连接超时，适用于大文件上传
+    max-swallow-size: -1        # 不限制请求体大小
+    async:
+      request-timeout: 300000   # 异步请求超时5分钟
 
 spring:
   application:

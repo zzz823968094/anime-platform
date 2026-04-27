@@ -7,7 +7,6 @@ import com.anime.anime.mapper.SearchLogMapper;
 import com.anime.anime.mapper.VisitLogMapper;
 import com.anime.anime.service.AnimeTableService;
 import com.anime.common.result.Result;
-import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
