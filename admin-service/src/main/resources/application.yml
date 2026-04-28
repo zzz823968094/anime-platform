@@ -22,7 +22,7 @@ spring:
 
 file:
   upload:
-    path: /root/uploads/app-versions/
+    path: /var/www/uploads/app-versions
   access:
     url: https://www.animeparadise.vip/files/
 #file:
