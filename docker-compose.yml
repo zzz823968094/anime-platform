@@ -17,6 +17,8 @@ services:
     build: ./admin-service
     container_name: anime-admin-service
     network_mode: host
+    volumes:
+      - /var/www/uploads/app-versions:/var/www/uploads/app-versions
     env_file:
       - .env
     environment:
