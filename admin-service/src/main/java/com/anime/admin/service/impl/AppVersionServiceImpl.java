@@ -6,6 +6,7 @@ import com.anime.admin.service.AppVersionService;
 import com.anime.common.exception.BusinessException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVersion> implements AppVersionService {
 
     @Value("${file.upload.path}")
@@ -98,6 +100,8 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
 
     @Override
     public Map<String, Object> uploadFile(MultipartFile file) throws Exception {
+        log.info("开始上传文件: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
+        
         if (file == null || file.isEmpty()) {
             throw new BusinessException(400, "文件不能为空");
         }
@@ -119,21 +123,27 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
         
         // 创建上传目录
         Path uploadDir = Paths.get(uploadPath);
+        log.info("上传目录: {}", uploadDir.toAbsolutePath());
         if (!Files.exists(uploadDir)) {
+            log.info("目录不存在，创建目录: {}", uploadDir);
             Files.createDirectories(uploadDir);
         }
 
         // 保存文件 - 使用更安全的方式复制文件
         Path filePath = uploadDir.resolve(uniqueFilename);
+        log.info("文件路径: {}", filePath.toAbsolutePath());
         try (InputStream inputStream = file.getInputStream()) {
-            Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+            long bytesCopied = Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+            log.info("文件复制完成，复制了 {} bytes", bytesCopied);
         } catch (IOException e) {
+            log.error("文件复制失败: {}", e.getMessage(), e);
             // 如果上传失败，删除可能已创建的部分文件
             if (Files.exists(filePath)) {
                 try {
                     Files.delete(filePath);
+                    log.info("已删除部分文件: {}", filePath);
                 } catch (IOException ex) {
-                    // 记录日志但不抛出异常，因为主要异常是上传失败
+                    log.error("删除部分文件失败: {}", ex.getMessage());
                 }
             }
             throw new BusinessException(500, "文件上传失败: " + e.getMessage());
@@ -141,16 +151,19 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
 
         // 验证文件是否完整上传
         long uploadedSize = Files.size(filePath);
+        log.info("文件大小验证 - 预期: {}, 实际: {}", file.getSize(), uploadedSize);
         if (uploadedSize != file.getSize()) {
+            log.error("文件大小不匹配，删除文件: {}", filePath);
             // 如果文件大小不匹配，删除不完整文件
             try {
                 Files.delete(filePath);
             } catch (IOException e) {
-                // 记录日志
+                log.error("删除不完整文件失败: {}", e.getMessage());
             }
             throw new BusinessException(500, "文件上传不完整，请重试");
         }
 
+        log.info("文件上传成功: {}", filePath);
         // 返回文件信息
         Map<String, Object> result = new HashMap<>();
         // 生成可通过 /files/ 路径访问的 URL
