@@ -35,6 +35,7 @@
         <knife4j.version>4.4.0</knife4j.version>
         <mysql.version>8.0.33</mysql.version>
         <spring-cloud-starter-bootstrap.version>4.1.4</spring-cloud-starter-bootstrap.version>
+        <logback.version>1.5.13</logback.version>
     </properties>
 
     <dependencyManagement>
@@ -120,6 +121,17 @@
                 <groupId>com.alibaba.cloud</groupId>
                 <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
                 <version>${spring-cloud-alibaba.version}</version>
+            </dependency>
+            <!-- Logback (CVE-2024-12801 fix) -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
