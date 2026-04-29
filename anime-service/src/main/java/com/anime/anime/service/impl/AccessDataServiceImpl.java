@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -124,12 +125,24 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
      * 获取今日实时访问人数（从Redis读取）
      */
     @Override
-    public Integer getTodayRealTimeUserCount() {
+    public Integer getTodayAppRealTimeUserCount() {
+        return getUserCountBySign(APP_REDIS_KEY_SUFFIX);
+    }
+
+    /**
+     * 获取今日实时访问人数（从Redis读取）
+     */
+    @Override
+    public Integer getTodayWebRealTimeUserCount() {
+        return getUserCountBySign(WEB_REDIS_KEY_SUFFIX);
+    }
+
+    @NonNull
+    private Integer getUserCountBySign(String webRedisKeySuffix) {
         try {
             String today = LocalDate.now()
                     .format(DateTimeFormatter.BASIC_ISO_DATE);
-            String redisKey = REDIS_KEY_PREFIX + today + REDIS_KEY_SUFFIX;
-
+            String redisKey = REDIS_KEY_PREFIX + today + webRedisKeySuffix;
             Long count = redisTemplate.opsForSet().size(redisKey);
             return count != null ? count.intValue() : 0;
         } catch (Exception e) {
@@ -168,6 +181,7 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
      */
     @Override
     public Long getTotalUserCount() {
-        return accessDataMapper.getTotalUserCount();
+        Long totalUserCount = accessDataMapper.getTotalUserCount();
+        return totalUserCount == null ? 0 : totalUserCount;
     }
 }

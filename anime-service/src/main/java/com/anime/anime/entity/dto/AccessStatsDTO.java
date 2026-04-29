@@ -14,7 +14,11 @@ public class AccessStatsDTO {
     /**
      * 今日实时访问人数（UV）
      */
-    private Integer todayUV;
+    private Integer todayAppUV;
+    /**
+     * 今日实时访问人数（UV）
+     */
+    private Integer todayWebUV;
 
     /**
      * 总访问人数

@@ -28,7 +28,7 @@ public class AnimeTableController {
 
     @GetMapping("/list")
     public Result<?> list(
-            HttpServletRequest request ,
+            HttpServletRequest request,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "24") int size,
             @RequestParam(value = "type", required = false) String type,
@@ -40,7 +40,7 @@ public class AnimeTableController {
             @RequestParam(value = "sign", required = false) String sign) {
         Page<AnimeTable> result = animeService.listAnime(page, size, type, status, year, genre, sort, keyword);
         String ip = getClientIp(request);
-        accessDataService.recordAccess(ip,sign);
+        accessDataService.recordAccess(ip, sign);
         return Result.ok(result);
     }
 
@@ -191,15 +191,18 @@ public class AnimeTableController {
     public Result<AccessStatsDTO> accessStats(
             @RequestParam(value = "days", defaultValue = "7") int days) {
         AccessStatsDTO stats = new AccessStatsDTO();
-        Integer todayRealTimeUserCount = accessDataService.getTodayRealTimeUserCount();
-        todayRealTimeUserCount = todayRealTimeUserCount !=null ? todayRealTimeUserCount : 0;
+        Integer todayAppRealTimeUserCount = accessDataService.getTodayAppRealTimeUserCount();
         // 今日实时访问人数（从Redis读取）
-        stats.setTodayUV(accessDataService.getTodayRealTimeUserCount());
+        stats.setTodayAppUV(todayAppRealTimeUserCount);
+
+        Integer todayWebRealTimeUserCount = accessDataService.getTodayWebRealTimeUserCount();
+        // 今日实时访问人数（从Redis读取）
+        stats.setTodayWebUV(todayWebRealTimeUserCount);
         // 最近N天访问趋势
         stats.setTrend(accessDataService.getAccessTrend(days));
         // 总访问人数
         Long totalUserCount = accessDataService.getTotalUserCount();
-        stats.setTotalUserCount(totalUserCount != null ? totalUserCount+ todayRealTimeUserCount : 0 );
+        stats.setTotalUserCount(totalUserCount + todayAppRealTimeUserCount + todayWebRealTimeUserCount);
 
         return Result.ok(stats);
     }
