@@ -22,7 +22,6 @@ public class AuthFilter implements GlobalFilter, Ordered {
             "/api/user/list",
             "/api/user/count",
             "/api/video/totalCount",
-            "/api/anime/visit/stats",
             "/api/auth/login",
             "/api/auth/register",
             "/api/anime/list",

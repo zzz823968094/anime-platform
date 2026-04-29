@@ -1,10 +1,11 @@
 package com.anime.anime.controller;
 
+import com.anime.anime.entity.AccessData;
 import com.anime.anime.entity.AnimeTable;
 import com.anime.anime.entity.SearchLog;
-import com.anime.anime.entity.VisitLog;
+import com.anime.anime.entity.dto.AccessStatsDTO;
 import com.anime.anime.mapper.SearchLogMapper;
-import com.anime.anime.mapper.VisitLogMapper;
+import com.anime.anime.service.AccessDataService;
 import com.anime.anime.service.AnimeTableService;
 import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -24,10 +25,11 @@ public class AnimeTableController {
 
     private final AnimeTableService animeService;
     private final SearchLogMapper searchLogMapper;
-    private final VisitLogMapper visitLogMapper;
+    private final AccessDataService accessDataService;
 
     @GetMapping("/list")
     public Result<?> list(
+            HttpServletRequest request ,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "24") int size,
             @RequestParam(value = "type", required = false) String type,
@@ -37,6 +39,8 @@ public class AnimeTableController {
             @RequestParam(value = "sort", defaultValue = "latest") String sort,
             @RequestParam(value = "keyword", required = false) String keyword) {
         Page<AnimeTable> result = animeService.listAnime(page, size, type, status, year, genre, sort, keyword);
+        String ip = getClientIp(request);
+        accessDataService.recordAccess(ip);
         return Result.ok(result);
     }
 
@@ -51,6 +55,7 @@ public class AnimeTableController {
         animeService.updateById(anime);
         return Result.ok(anime);
     }
+
     @DeleteMapping("/{id}")
     public Result<?> delete(@PathVariable("id") Long id) {
         AnimeTable anime = animeService.getById(id);
@@ -87,7 +92,8 @@ public class AnimeTableController {
                 log.setIp(getClientIp(request));
                 log.setCreatedAt(LocalDateTime.now());
                 searchLogMapper.insert(log);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         return Result.ok(animeService.search(keyword, page, size));
@@ -178,43 +184,24 @@ public class AnimeTableController {
     }
 
     /**
-     * 访问上报（前端每次路由跳转时调用）
-     * 同一 IP 同一页面同一天只记录一次，防刷
-     */
-    @PostMapping("/visit")
-    public Result<?> reportVisit(@RequestBody Map<String, String> body,
-                                 @RequestHeader(value = "X-User-Id", required = false) Long userId,
-                                 HttpServletRequest request) {
-        String page = body.get("page");
-        if (page == null || page.isBlank()) return Result.ok("skip");
-
-        String ip = getClientIp(request);
-
-        // 同一 IP 同一页面今天已上报过则跳过
-        if (visitLogMapper.checkDuplicate(ip, page) > 0) return Result.ok("dup");
-
-        VisitLog log = new VisitLog();
-        log.setPage(page);
-        log.setIp(ip);
-        log.setUserId(userId);
-        log.setVisitDate(java.time.LocalDate.now());
-        log.setCreatedAt(LocalDateTime.now());
-        visitLogMapper.insert(log);
-        return Result.ok("ok");
-    }
-
-    /**
      * 访问统计（管理端）
-     * 返回今日UV、今日PV、最近7天趋势、热门页面
+     * 返回今日UV、最近N天趋势、总访问量
      */
-    @GetMapping("/visit/stats")
-    public Result<?> visitStats() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("todayUV",  visitLogMapper.todayUV());
-        data.put("todayPV",  visitLogMapper.todayPV());
-        data.put("trend",    visitLogMapper.dailyUV(7));
-        data.put("hotPages", visitLogMapper.hotPages());
-        return Result.ok(data);
+    @GetMapping("/access/stats")
+    public Result<AccessStatsDTO> accessStats(
+            @RequestParam(value = "days", defaultValue = "7") int days) {
+        AccessStatsDTO stats = new AccessStatsDTO();
+        Integer todayRealTimeUserCount = accessDataService.getTodayRealTimeUserCount();
+        todayRealTimeUserCount = todayRealTimeUserCount !=null ? todayRealTimeUserCount : 0;
+        // 今日实时访问人数（从Redis读取）
+        stats.setTodayUV(accessDataService.getTodayRealTimeUserCount());
+        // 最近N天访问趋势
+        stats.setTrend(accessDataService.getAccessTrend(days));
+        // 总访问人数
+        Long totalUserCount = accessDataService.getTotalUserCount();
+        stats.setTotalUserCount(totalUserCount != null ? totalUserCount+ todayRealTimeUserCount : 0 );
+
+        return Result.ok(stats);
     }
 
     private String getClientIp(HttpServletRequest request) {
