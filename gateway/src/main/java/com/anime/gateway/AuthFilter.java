@@ -32,7 +32,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
             "/api/crawler",
             "/api/admin/login",
             "/api/anime/carousel/list",
-            "api/admin/app-versions/latest"
+            "/api/admin/app-versions/latest"
     );
 
     @Override
