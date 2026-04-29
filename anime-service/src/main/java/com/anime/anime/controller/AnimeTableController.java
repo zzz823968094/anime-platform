@@ -1,6 +1,5 @@
 package com.anime.anime.controller;
 
-import com.anime.anime.entity.AccessData;
 import com.anime.anime.entity.AnimeTable;
 import com.anime.anime.entity.SearchLog;
 import com.anime.anime.entity.dto.AccessStatsDTO;
