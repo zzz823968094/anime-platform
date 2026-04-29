@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -173,7 +174,19 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
      */
     @Override
     public List<AccessData> getAccessTrend(int days) {
-        return accessDataMapper.getAccessTrend(days);
+        List<AccessData> accessTrend = accessDataMapper.getAccessTrend(days);
+        AccessData accessData = new AccessData();
+        Integer todayWebRealTimeUserCount = getTodayWebRealTimeUserCount();
+        Integer todayAppRealTimeUserCount = getTodayAppRealTimeUserCount();
+        accessData.setWebUserCount(todayWebRealTimeUserCount);
+        accessData.setAppUserCount(todayAppRealTimeUserCount);
+        String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        accessData.setDate(Integer.parseInt(today));
+        if(accessTrend == null || accessTrend.isEmpty()){
+            accessTrend = new ArrayList<>();
+        }
+        accessTrend.add(accessData);
+        return accessTrend;
     }
 
     /**
