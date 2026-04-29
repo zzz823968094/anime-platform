@@ -17,22 +17,25 @@ public interface AccessDataMapper extends BaseMapper<AccessData> {
 
     /**
      * 查询最近N天的访问趋势
+     *
      * @param days 天数
      * @return 日期和访问人数列表
      */
-    @Select("SELECT date, user_count FROM access_data " +
+    @Select("SELECT date, app_user_count,web_user_count FROM access_data " +
             "WHERE date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL #{days} DAY), '%Y%m%d') " +
             "ORDER BY date ASC")
     @Results({
-        @Result(property = "date", column = "date"),
-        @Result(property = "userCount", column = "user_count")
+            @Result(property = "date", column = "date"),
+            @Result(property = "appUserCount", column = "app_user_count"),
+            @Result(property = "webUserCount", column = "web_user_count")
     })
     List<AccessData> getAccessTrend(int days);
 
     /**
      * 查询总访问人数（所有日期的累加）
+     *
      * @return 总访问记录数
      */
-    @Select("SELECT SUM(user_count) FROM access_data")
+    @Select("SELECT SUM(web_user_count + app_user_count) AS total_user_count FROM access_data")
     Long getTotalUserCount();
 }

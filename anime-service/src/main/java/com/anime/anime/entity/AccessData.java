@@ -26,7 +26,12 @@ public class AccessData {
     /**
      * 访问人数（去重IP数）
      */
-    private Integer userCount;
+    private Integer webUserCount;
+
+    /**
+     * 访问人数（去重IP数）
+     */
+    private Integer appUserCount;
 
     /**
      * IP集合（JSON格式存储）

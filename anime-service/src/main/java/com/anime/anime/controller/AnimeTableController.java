@@ -36,10 +36,11 @@ public class AnimeTableController {
             @RequestParam(value = "year", required = false) Integer year,
             @RequestParam(value = "genre", required = false) String genre,
             @RequestParam(value = "sort", defaultValue = "latest") String sort,
-            @RequestParam(value = "keyword", required = false) String keyword) {
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "sign", required = false) String sign) {
         Page<AnimeTable> result = animeService.listAnime(page, size, type, status, year, genre, sort, keyword);
         String ip = getClientIp(request);
-        accessDataService.recordAccess(ip);
+        accessDataService.recordAccess(ip,sign);
         return Result.ok(result);
     }
 

@@ -9,7 +9,7 @@ public interface AccessDataService extends IService<AccessData> {
     /**
      * 记录访问IP到Redis
      */
-    void recordAccess(String ip);
+    void recordAccess(String ip, String sign);
 
     /**
      * 获取今日实时访问人数

@@ -1,5 +1,6 @@
 package com.anime.anime.service.impl;
 
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.anime.anime.entity.AccessData;
 import com.anime.anime.mapper.AccessDataMapper;
@@ -31,22 +32,25 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
 
     private static final String REDIS_KEY_PREFIX = "access:";
     private static final String REDIS_KEY_SUFFIX = ":ips";
+    private static final String APP_REDIS_KEY_SUFFIX = ":app:ips";
+    private static final String WEB_REDIS_KEY_SUFFIX = ":web:ips";
 
     /**
      * 记录访问IP到Redis
      *
-     * @param ip 客户端IP
+     * @param ip   客户端IP
+     * @param sign 标识
      */
     @Override
-    public void recordAccess(String ip) {
+    public void recordAccess(String ip, String sign) {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             return;
         }
-
+        sign = sign == null ? "app" : sign;
         try {
             // 获取当前日期作为Key
             String dateKey = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-            String redisKey = REDIS_KEY_PREFIX + dateKey + REDIS_KEY_SUFFIX;
+            String redisKey = REDIS_KEY_PREFIX + dateKey + ":" + sign + REDIS_KEY_SUFFIX;
             // 异步将IP添加到Redis Set中（自动去重）
             redisTemplate.opsForSet().add(redisKey, ip);
             // 设置过期时间为3天（防止Redis数据堆积）
@@ -66,38 +70,40 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
             // 获取昨天的日期Key
             String yesterday = LocalDate.now().minusDays(1)
                     .format(DateTimeFormatter.BASIC_ISO_DATE);
-            String redisKey = REDIS_KEY_PREFIX + yesterday + REDIS_KEY_SUFFIX;
+            String webRedisKey = REDIS_KEY_PREFIX + yesterday + WEB_REDIS_KEY_SUFFIX;
+            String appRedisKey = REDIS_KEY_PREFIX + yesterday + APP_REDIS_KEY_SUFFIX;
             // 从Redis中获取所有IP
-            Set<String> ips = redisTemplate.opsForSet().members(redisKey);
+            Set<String> appIps = redisTemplate.opsForSet().members(appRedisKey);
+            Set<String> webIps = redisTemplate.opsForSet().members(webRedisKey);
             // 计算访问人数（去重IP数）
-            int userCount;
-            if (ips == null || ips.isEmpty()) {
-                userCount = 0;
-            } else {
-                userCount = ips.size();
-            }
-            // 将IP集合转换为JSON字符串
-            String ipJson = JSONUtil.toJsonStr(ips);
+            int appUserCount = (appIps == null || appIps.isEmpty()) ? 0 : appIps.size();
+            int webUserCount = (webIps == null || webIps.isEmpty()) ? 0 : webIps.size();
             // 检查是否已存在该日期的记录
             Integer dateInt = Integer.parseInt(yesterday);
             AccessData existing = accessDataMapper.selectOne(
                     new LambdaQueryWrapper<AccessData>()
                             .eq(AccessData::getDate, dateInt)
             );
+            JSONObject object = new JSONObject();
+            object.set("appIp", appIps);
+            object.set("webIp", webIps);
+            String ips = JSONUtil.toJsonStr(object);
             if (existing != null) {
                 // 更新现有记录
-                existing.setUserCount(userCount);
-                existing.setIp(ipJson);
+                existing.setAppUserCount(appUserCount);
+                existing.setWebUserCount(webUserCount);
+                existing.setIp(ips);
                 accessDataMapper.updateById(existing);
-                log.info("更新访问数据: date={}, userCount={}", yesterday, userCount);
+                log.info("更新访问数据: date={}, appUserCount={},webUserCount={}", yesterday, appUserCount, webUserCount);
             } else {
                 // 插入新记录
                 AccessData accessData = new AccessData();
                 accessData.setDate(dateInt);
-                accessData.setUserCount(userCount);
-                accessData.setIp(ipJson);
+                accessData.setAppUserCount(appUserCount);
+                accessData.setWebUserCount(webUserCount);
+                accessData.setIp(ips);
                 accessDataMapper.insert(accessData);
-                log.info("新增访问数据: date={}, userCount={}", yesterday, userCount);
+                log.info("新增访问数据: date={}, appUserCount={},webUserCount={}", yesterday, appUserCount, webUserCount);
             }
             log.info("访问数据聚合任务执行完成");
         } catch (Exception e) {
