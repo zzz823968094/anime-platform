@@ -19,9 +19,9 @@ public class CrawlerFailController {
     private final CrawlerService crawlerService;
 
     private final StringRedisTemplate redisTemplate;
-    private final String CHINA_KEY = "crawler:fail:24";
-    private final String JAPAN_KEY = "crawler:fail:25";
-    private final String USA_KEY = "crawler:fail:26";
+    private final String CHINA_KEY = "crawler:failed:24";
+    private final String JAPAN_KEY = "crawler:failed:25";
+    private final String USA_KEY = "crawler:failed:26";
 
     @GetMapping("/fail")
     public Result<?> fail() {
