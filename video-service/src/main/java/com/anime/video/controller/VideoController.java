@@ -22,11 +22,6 @@ public class VideoController {
     private final VideoMapper videoMapper;
     private final AnimeTableMapper animeTableMapper;
 
-    @GetMapping("totalCount")
-    public Result<?> totalCount() {
-        return Result.ok(videoService.count());
-    }
-
     @GetMapping("/anime/{animeId}")
     public Result<?> listByAnime(@PathVariable("animeId") Long animeId) {
         List<Video> list = videoMapper.selectList(

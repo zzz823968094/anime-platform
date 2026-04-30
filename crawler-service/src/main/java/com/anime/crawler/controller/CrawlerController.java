@@ -1,6 +1,7 @@
 package com.anime.crawler.controller;
 
 import com.anime.common.result.Result;
+import com.anime.crawler.entity.dto.CrawlerRequestDTO;
 import com.anime.crawler.service.BangumiService;
 import com.anime.crawler.service.CrawlerService;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,11 @@ public class CrawlerController {
 
     /** 爬取所有分类最新第1页 */
     @PostMapping("/crawl-now")
-    public Result<?> crawlNow(
-            @RequestParam(value = "type", required = false) Integer type,
-            @RequestParam(value = "hour", required = false) Integer hour
-    ) {
+    public Result<?> crawlNow(@RequestBody(required = false) CrawlerRequestDTO request) {
         // 直接调用服务层方法,由CrawlerService内部的线程池管理并发
-        crawlerService.crawlNow(type,hour);
+        Integer type = request != null ? request.getType() : null;
+        Integer hour = request != null ? request.getHour() : null;
+        crawlerService.crawlNow(type, hour);
         return Result.ok("已启动：爬取所有分类最新数据");
     }
 

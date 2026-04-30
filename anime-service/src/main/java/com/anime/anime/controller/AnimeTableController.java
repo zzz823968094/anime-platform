@@ -3,6 +3,7 @@ package com.anime.anime.controller;
 import com.anime.anime.entity.AnimeTable;
 import com.anime.anime.entity.SearchLog;
 import com.anime.anime.entity.dto.AccessStatsDTO;
+import com.anime.anime.mapper.AnimeTableMapper;
 import com.anime.anime.mapper.SearchLogMapper;
 import com.anime.anime.service.AccessDataService;
 import com.anime.anime.service.AnimeTableService;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class AnimeTableController {
 
     private final AnimeTableService animeService;
+    private final AnimeTableMapper animeTableMapper;
     private final SearchLogMapper searchLogMapper;
     private final AccessDataService accessDataService;
 
@@ -149,14 +151,11 @@ public class AnimeTableController {
                 .count();
         data.put("totalAnime", totalAnime);
 
-        // 总播放量（所有番剧 view_count 之和）
-        List<AnimeTable> all = animeService.lambdaQuery()
-                .select(AnimeTable::getVodHits)
-                .list();
-        long totalView = all.stream()
-                .mapToLong(a -> a.getVodHits() == null ? 0 : a.getVodHits())
-                .sum();
+        // 总播放量（使用MySQL SUM函数统计，避免加载所有数据到内存）
+        Long totalView = animeTableMapper.sumTotalViewCount();
+        Long todayView = animeTableMapper.sumTodayViewCount();
         data.put("totalView", totalView);
+        data.put("todayView",todayView);
 
         // 各分类番剧数
         long jpCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "25").ne(AnimeTable::getVodStatus, 0).count();
@@ -165,7 +164,6 @@ public class AnimeTableController {
         data.put("jpCount", jpCount);
         data.put("usCount", usCount);
         data.put("cnCount", cnCount);
-
         return Result.ok(data);
     }
 

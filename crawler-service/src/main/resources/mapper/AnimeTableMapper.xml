@@ -57,22 +57,77 @@
         SELECT * FROM anime_table WHERE vod_id = #{vodId} LIMIT 1
     </select>
 
-    <!-- 批量更新动漫数据(根据ID) -->
+    <!-- 批量根据vodId查询动漫信息 -->
+    <select id="selectByVodIds" resultType="com.anime.crawler.entity.AnimeTable">
+        SELECT * FROM anime_table WHERE vod_id IN
+        <foreach collection="vodIds" item="vodId" open="(" separator="," close=")">
+            #{vodId}
+        </foreach>
+    </select>
+
+    <!-- 批量更新动漫数据(根据ID) - 使用CASE WHEN语法 -->
     <update id="updateBatchById">
-        <foreach collection="list" item="item" separator=";">
-            UPDATE anime_table SET
-                vod_total = #{item.vodTotal},
-                vod_name = #{item.vodName},
-                vod_sub = #{item.vodSub},
-                vod_pic = #{item.vodPic},
-                vod_actor = #{item.vodActor},
-                vod_director = #{item.vodDirector},
-                vod_blurb = #{item.vodBlurb},
-                vod_remarks = #{item.vodRemarks},
-                vod_pubdate = #{item.vodPubdate},
-                vod_content = #{item.vodContent},
-                update_at = NOW()
-            WHERE id = #{item.id}
+        UPDATE anime_table
+        <trim prefix="SET" suffixOverrides=",">
+            <trim prefix="vod_total = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodTotal}
+                </foreach>
+            </trim>
+            <trim prefix="vod_name = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodName}
+                </foreach>
+            </trim>
+            <trim prefix="vod_sub = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodSub}
+                </foreach>
+            </trim>
+            <trim prefix="vod_pic = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodPic}
+                </foreach>
+            </trim>
+            <trim prefix="vod_actor = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodActor}
+                </foreach>
+            </trim>
+            <trim prefix="vod_director = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodDirector}
+                </foreach>
+            </trim>
+            <trim prefix="vod_blurb = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodBlurb}
+                </foreach>
+            </trim>
+            <trim prefix="vod_remarks = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodRemarks}
+                </foreach>
+            </trim>
+            <trim prefix="vod_pubdate = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodPubdate}
+                </foreach>
+            </trim>
+            <trim prefix="vod_content = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodContent}
+                </foreach>
+            </trim>
+            <trim prefix="update_at = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN NOW()
+                </foreach>
+            </trim>
+        </trim>
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.id}
         </foreach>
     </update>
 

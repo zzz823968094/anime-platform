@@ -20,6 +20,11 @@ public interface AnimeTableMapper extends BaseMapper<AnimeTable> {
     AnimeTable selectByVodId(@Param("vodId") Integer vodId);
 
     /**
+     * 批量根据vodId查询动漫信息
+     */
+    List<AnimeTable> selectByVodIds(@Param("vodIds") List<Integer> vodIds);
+
+    /**
      * 批量更新动漫数据(根据ID)
      */
     int updateBatchById(@Param("list") List<AnimeTable> list);

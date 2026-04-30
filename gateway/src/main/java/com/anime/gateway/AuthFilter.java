@@ -21,7 +21,6 @@ public class AuthFilter implements GlobalFilter, Ordered {
             "/api/danmaku/*",
             "/api/user/list",
             "/api/user/count",
-            "/api/video/totalCount",
             "/api/auth/login",
             "/api/auth/register",
             "/api/anime/list",
