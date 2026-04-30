@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +33,7 @@ import java.util.regex.Pattern;
 public class CrawlerService {
     private static final String BASE_VIDEO_URL = "https://hhzyjiexi.com/play/?url=";
     private static final String CRAWLER_BY_TYPE_URL = "https://hhzyapi.com/api.php/provide/vod/from/hhm3u8/at/json?ac=videolist&t=";
+    private static final String CRAWLER_BY_IDS_TYPE_URL = "https://hhzyapi.com/api.php/provide/vod/from/hhm3u8/at/json?ac=videolist&ids=";
     // 批量插入的大小,避免一次性插入过多数据导致内存溢出或数据库连接超时
     private static final int BATCH_SIZE = 100;
     // 预编译正则表达式,避免重复编译
@@ -46,6 +48,13 @@ public class CrawlerService {
     private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
     private final StringRedisTemplate redisTemplate;
+
+    public void crawlById(Set<String> appIps, int type) {
+        String requestUrl = CRAWLER_BY_IDS_TYPE_URL + String.join(",", appIps);
+        String result = fetchData(requestUrl);
+        processList(JSONUtil.parseArray(result), type);
+        log.info("爬取成功, 共处理 {} 条数据", appIps.size());
+    }
 
     @Async
     public void crawlNow(Integer type, Integer hour) {
