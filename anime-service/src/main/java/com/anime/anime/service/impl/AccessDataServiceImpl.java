@@ -66,6 +66,7 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
     /**
      * 将前一天的访问数据聚合到数据库
      */
+    @Override
     public void aggregateHourlyAccessData() {
         log.info("开始执行访问数据聚合任务");
         try {
@@ -114,9 +115,9 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
     }
 
     /**
-     * 每天凌晨1点执行，确保前一天的数据完全聚合
+     * 每天凌晨0点执行，确保前一天的数据完全聚合
      */
-    @Scheduled(cron = "0 0 1 * * ?")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Shanghai")
     public void aggregateDailyAccessData() {
         log.info("开始执行每日访问数据最终聚合任务");
         aggregateHourlyAccessData();

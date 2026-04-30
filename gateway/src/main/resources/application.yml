@@ -22,7 +22,7 @@ spring:
         - id: anime-service
           uri: lb://anime-service
           predicates:
-            - Path=/api/anime/**, /api/recommend/**, /api/search/**,/api/history/**
+            - Path=/api/anime/**, /api/recommend/**, /api/search/**,/api/history/**,/api/access/data/**
 
         - id: video-service
           uri: lb://video-service

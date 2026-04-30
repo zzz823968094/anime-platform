@@ -33,4 +33,9 @@ public interface AccessDataService extends IService<AccessData> {
      * 获取今日Web实时访问人数
      */
     Integer getTodayWebRealTimeUserCount();
+
+    /**
+     * 初始化Redis数据
+     */
+    void aggregateHourlyAccessData();
 }
