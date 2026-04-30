@@ -52,8 +52,22 @@ public class CrawlerService {
     public void crawlById(Set<String> appIps, int type) {
         String requestUrl = CRAWLER_BY_IDS_TYPE_URL + String.join(",", appIps);
         String result = fetchData(requestUrl);
-        processList(JSONUtil.parseArray(result), type);
-        log.info("爬取成功, 共处理 {} 条数据", appIps.size());
+        
+        // 验证返回数据是否为空或无效
+        if (StrUtil.isEmpty(result)) {
+            log.error("爬取失败: 请求返回数据为空, URL: {}", requestUrl);
+            return;
+        }
+        
+        try {
+            // 验证是否为有效的JSON数组格式
+            JSONArray jsonArray = JSONUtil.parseArray(result);
+            processList(jsonArray, type);
+            log.info("爬取成功, 共处理 {} 条数据", appIps.size());
+        } catch (Exception e) {
+            log.error("爬取失败: JSON解析错误, URL: {}, 返回内容前100字符: {}", 
+                    requestUrl, result.length() > 100 ? result.substring(0, 100) : result, e);
+        }
     }
 
     @Async
@@ -154,13 +168,20 @@ public class CrawlerService {
         int maxRetries = 3;
         for (int i = 0; i < maxRetries; i++) {
             try {
-                // 设置30秒超时,适应较慢的网络环境
+                // 设置60秒超时,适应较慢的网络环境
                 String result = HttpUtil.get(url, 60000);
                 if (StrUtil.isNotEmpty(result)) {
-                    return result;
+                    // 验证返回内容是否为有效的JSON格式(以{或[开头)
+                    String trimmedResult = result.trim();
+                    if (trimmedResult.startsWith("{") || trimmedResult.startsWith("[")) {
+                        return result;
+                    } else {
+                        log.warn("请求返回非JSON格式数据,第 {} 次重试: {}, 返回内容前100字符: {}", 
+                                i + 1, url, trimmedResult.length() > 100 ? trimmedResult.substring(0, 100) : trimmedResult);
+                    }
                 }
             } catch (Exception e) {
-                log.warn("请求失败,第 {} 次重试: {}", i + 1, url);
+                log.warn("请求失败,第 {} 次重试: {}", i + 1, url, e);
                 if (i < maxRetries - 1) {
                     try {
                         // 指数退避: 1s -> 2s -> 4s
