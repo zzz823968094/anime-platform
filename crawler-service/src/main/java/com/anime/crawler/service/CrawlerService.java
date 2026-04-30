@@ -51,23 +51,8 @@ public class CrawlerService {
 
     public void crawlById(Set<String> appIps, int type) {
         String requestUrl = CRAWLER_BY_IDS_TYPE_URL + String.join(",", appIps);
-        String result = fetchData(requestUrl);
-        
-        // 验证返回数据是否为空或无效
-        if (StrUtil.isEmpty(result)) {
-            log.error("爬取失败: 请求返回数据为空, URL: {}", requestUrl);
-            return;
-        }
-        
-        try {
-            // 验证是否为有效的JSON数组格式
-            JSONArray jsonArray = JSONUtil.parseArray(result);
-            processList(jsonArray, type);
-            log.info("爬取成功, 共处理 {} 条数据", appIps.size());
-        } catch (Exception e) {
-            log.error("爬取失败: JSON解析错误, URL: {}, 返回内容前100字符: {}", 
-                    requestUrl, result.length() > 100 ? result.substring(0, 100) : result, e);
-        }
+        String firstPageResult = fetchData(requestUrl);
+        Crawler(firstPageResult, type);
     }
 
     @Async
