@@ -1,8 +1,9 @@
 package com.anime.crawler.controller;
 
 import com.anime.common.result.Result;
+import com.anime.crawler.entity.AnimeTable;
 import com.anime.crawler.entity.dto.CrawlerRequestDTO;
-import com.anime.crawler.service.BangumiService;
+import com.anime.crawler.mapper.AnimeTableMapper;
 import com.anime.crawler.service.CrawlerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +16,21 @@ import org.springframework.web.bind.annotation.*;
 public class CrawlerController {
 
     private final CrawlerService crawlerService;
-    private final BangumiService bangumiService;
+    private final AnimeTableMapper animeTableMapper;
 
-    /** 爬取所有分类最新第1页 */
+    @PutMapping("/crawl")
+    public Result<?> crawl(@RequestParam("id") Long id) {
+        if (null == id) {
+            return Result.fail("参数错误");
+        }
+        AnimeTable animeTable = animeTableMapper.selectById(id);
+        crawlerService.crawlById(animeTable.getVodId(), animeTable.getTypeId());
+        return Result.ok();
+    }
+
+    /**
+     * 爬取所有分类最新第1页
+     */
     @PostMapping("/crawl-now")
     public Result<?> crawlNow(@RequestBody(required = false) CrawlerRequestDTO request) {
         // 直接调用服务层方法,由CrawlerService内部的线程池管理并发

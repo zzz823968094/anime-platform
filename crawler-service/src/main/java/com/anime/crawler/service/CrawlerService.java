@@ -48,9 +48,23 @@ public class CrawlerService {
     private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
     private final StringRedisTemplate redisTemplate;
-
-    public void crawlById(Set<String> appIps, int type) {
-        String requestUrl = CRAWLER_BY_IDS_TYPE_URL + String.join(",", appIps);
+    public void crawlById(Integer vodId, int type) {
+        String requestUrl = CRAWLER_BY_IDS_TYPE_URL + vodId;
+        String firstPageResult = fetchData(requestUrl);
+        if (StrUtil.isEmpty(firstPageResult)) {
+            return;
+        }
+        JSONObject firstObject = JSONUtil.parseObj(firstPageResult);
+        if (firstObject.getInt("code") != 1) {
+            log.warn("爬取失败: API返回错误码 {}", firstObject.getInt("code"));
+            return;
+        }
+        JSONArray firstList = JSONUtil.parseArray(firstObject.get("list"));
+        // 处理第一页数据
+        processList(firstList, type);
+    }
+    public void crawlById(Set<String> vodIps, int type) {
+        String requestUrl = CRAWLER_BY_IDS_TYPE_URL + String.join(",", vodIps);
         String firstPageResult = fetchData(requestUrl);
         Crawler(firstPageResult, type);
     }
