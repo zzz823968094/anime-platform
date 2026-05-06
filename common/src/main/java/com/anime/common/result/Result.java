@@ -22,15 +22,15 @@ public class Result<T> {
         return ok(null);
     }
 
-    public static Result<?> fail(int code, String message) {
-        Result<?> r = new Result<>();
+    public static <T> Result<T> fail(int code, String message) {
+        Result<T> r = new Result<>();
         r.setCode(code);
         r.setMessage(message);
         r.setTimestamp(System.currentTimeMillis());
         return r;
     }
 
-    public static Result<?> fail(String message) {
+    public static <T> Result<T> fail(String message) {
         return fail(500, message);
     }
 }

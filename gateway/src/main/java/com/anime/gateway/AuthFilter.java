@@ -31,13 +31,22 @@ public class AuthFilter implements GlobalFilter, Ordered {
             "/api/admin/login",
             "/api/anime/carousel/list",
             "/api/admin/app-versions/latest",
-            "/api/access/data/init"
+            "/api/access/data/init",
+            // 广告查询接口（公开访问）
+            "/api/ad/position/",
+            "/api/ad-position/active"
     );
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().toString();
+        String method = request.getMethod().name();
+
+        // OPTIONS 预检请求直接放行（CORS）
+        if ("OPTIONS".equals(method)) {
+            return chain.filter(exchange);
+        }
 
         // 白名单直接放行
         for (String white : WHITE_LIST) {
@@ -47,7 +56,6 @@ public class AuthFilter implements GlobalFilter, Ordered {
         }
 
         // GET 请求的番剧详情、弹幕列表放行
-        String method = request.getMethod().name();
         if ("GET".equals(method) && (
                 path.startsWith("/api/anime/") ||
                         path.startsWith("/api/danmaku/") ||

@@ -1,0 +1,33 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: ad-service
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-enum-type-handler: org.apache.ibatis.type.EnumTypeHandler
+  mapper-locations: classpath:mapper/*.xml
+
+logging:
+  level:
+    com.anime: debug
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
