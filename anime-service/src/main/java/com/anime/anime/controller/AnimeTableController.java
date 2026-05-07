@@ -130,7 +130,6 @@ public class AnimeTableController {
             @RequestParam(value = "limit", defaultValue = "0") int limit) {
         int count = limit > 0 ? limit : size;
         List<AnimeTable> list = animeService.lambdaQuery()
-                .ne(AnimeTable::getVodStatus, 0)          // 过滤已下线
                 .orderByDesc(AnimeTable::getUpdateAt)
                 .last("limit " + count)
                 .list();
@@ -147,7 +146,6 @@ public class AnimeTableController {
 
         // 总番剧数（排除已下线）
         long totalAnime = animeService.lambdaQuery()
-                .ne(AnimeTable::getVodStatus, 0)
                 .count();
         data.put("totalAnime", totalAnime);
 
@@ -158,9 +156,9 @@ public class AnimeTableController {
         data.put("todayView",todayView);
 
         // 各分类番剧数
-        long jpCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "25").ne(AnimeTable::getVodStatus, 0).count();
-        long usCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "26").ne(AnimeTable::getVodStatus, 0).count();
-        long cnCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "24").ne(AnimeTable::getVodStatus, 0).count();
+        long jpCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "66").count();
+        long usCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "67").count();
+        long cnCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "68").count();
         data.put("jpCount", jpCount);
         data.put("usCount", usCount);
         data.put("cnCount", cnCount);

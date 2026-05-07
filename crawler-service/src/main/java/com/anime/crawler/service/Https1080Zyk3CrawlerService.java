@@ -12,6 +12,7 @@ import com.anime.crawler.entity.AnimeTable;
 import com.anime.crawler.entity.Video;
 import com.anime.crawler.mapper.AnimeTableMapper;
 import com.anime.crawler.mapper.VideoMapper;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -70,6 +71,7 @@ public class Https1080Zyk3CrawlerService {
      * @param page 页码
      * @return JSON结果
      */
+    @Async
     public String getVideoList(Integer type, Integer page) {
         long startTime = System.currentTimeMillis();
         try {
@@ -462,7 +464,7 @@ public class Https1080Zyk3CrawlerService {
     /**
      * 优雅关闭线程池
      */
-    @jakarta.annotation.PreDestroy
+    @PreDestroy
     public void shutdown() {
         log.info("正在关闭爬虫线程池");
         executorService.shutdown();

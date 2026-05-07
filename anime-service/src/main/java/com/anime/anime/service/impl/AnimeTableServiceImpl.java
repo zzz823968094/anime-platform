@@ -21,11 +21,6 @@ public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTa
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(AnimeTable::getVodName, keyword));
         }
-        if (status != null) {
-            wrapper.eq(AnimeTable::getVodStatus, status);
-        } else {
-            wrapper.ne(AnimeTable::getVodStatus, 0);
-        }
         if (StringUtils.hasText(type)) wrapper.eq(AnimeTable::getTypeId, type);
         if (year != null) wrapper.eq(AnimeTable::getVodYear, year);
         if (StringUtils.hasText(genre)) wrapper.like(AnimeTable::getVodClass, genre);
@@ -40,7 +35,6 @@ public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTa
     @Override
     public Page<AnimeTable> search(String keyword, int page, int size) {
         LambdaQueryWrapper<AnimeTable> wrapper = new LambdaQueryWrapper<>();
-        wrapper.ne(AnimeTable::getVodStatus, 0);
         if(null != keyword){
             wrapper.and(w -> w.like(AnimeTable::getVodName, keyword));
         }
@@ -52,20 +46,17 @@ public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTa
     public List<AnimeTable> getHotRecommend(int count) {
         // 检查是否有真实播放量数据
         long hasView = lambdaQuery()
-                .ne(AnimeTable::getVodStatus, 0)
                 .gt(AnimeTable::getVodHits, 0)
                 .count();
 
         LambdaQueryWrapper<AnimeTable> wrapper = new LambdaQueryWrapper<>();
-        wrapper.ne(AnimeTable::getVodStatus, 0); // 过滤已下线
 
         if (hasView > 0) {
             // 上线后有真实播放量：按播放量降序
             wrapper.orderByDesc(AnimeTable::getVodHits);
         } else {
             // 本地开发/冷启动阶段：连载中优先 + 评分降序 + 最近更新
-            wrapper.orderByDesc(AnimeTable::getVodStatus)    // status=1(连载) > status=2(完结)
-                    .orderByDesc(AnimeTable::getVodScore)
+            wrapper.orderByDesc(AnimeTable::getVodScore)
                     .orderByDesc(AnimeTable::getUpdateAt);
         }
 
