@@ -5,6 +5,7 @@ import com.anime.crawler.entity.AnimeTable;
 import com.anime.crawler.entity.dto.CrawlerRequestDTO;
 import com.anime.crawler.mapper.AnimeTableMapper;
 import com.anime.crawler.service.CrawlerService;
+import com.anime.crawler.service.Https1080Zyk3CrawlerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ public class CrawlerController {
 
     private final CrawlerService crawlerService;
     private final AnimeTableMapper animeTableMapper;
+    private final Https1080Zyk3CrawlerService https1080Zyk3CrawlerService;
 
     @PutMapping("/crawl")
     public Result<?> crawl(@RequestParam("id") Long id) {
@@ -52,6 +54,21 @@ public class CrawlerController {
         // 直接调用服务层方法,由CrawlerService内部的线程池管理并发,避免线程数量失控
         crawlerService.CrawlerByType(type);
         String typeName = type == 25 ? "日本动漫" : type == 26 ? "欧美动漫" : "中国动漫";
+        return Result.ok("已启动：" + typeName + " 增量爬取（遇到10个无变化自动停止）");
+    }
+
+    /**
+     * 增量爬取指定分类（遇到10个无变化自动停止）
+     * type: 25=日本动漫, 26=欧美动漫, 24=中国动漫
+     */
+    @PostMapping("/incremental/new/{type}")
+    public Result<?> incrementalNew(@PathVariable("type") int type) {
+        if (type != 66 && type != 67 && type != 68 && type != 69 && type != 70) {
+            return Result.fail("不支持的分类 type，只允许 25/26/24");
+        }
+        // 直接调用服务层方法,由CrawlerService内部的线程池管理并发,避免线程数量失控
+        https1080Zyk3CrawlerService.getVideoList(type, 1);
+        String typeName = type == 66 ? "国产动漫" : type == 67 ? "日韩动漫" : type == 68 ? "欧美动漫" : type == 69 ? "港台动漫" : "海外动漫";
         return Result.ok("已启动：" + typeName + " 增量爬取（遇到10个无变化自动停止）");
     }
 }
