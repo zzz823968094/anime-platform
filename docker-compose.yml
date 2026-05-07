@@ -79,3 +79,13 @@ services:
       - CRAWLER_CRON_JAPAN=${CRAWLER_CRON_JAPAN}
       - CRAWLER_CRON_OTHER=${CRAWLER_CRON_OTHER}
     restart: unless-stopped
+
+  ad-service:
+    build: ./ad-service
+    container_name: anime-ad-service
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_SERVER_ADDR}
+    restart: unless-stopped

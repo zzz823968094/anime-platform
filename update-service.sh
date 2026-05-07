@@ -36,6 +36,7 @@ SERVICE_INFO=(
     ["video-service"]="视频服务|8083|./video-service"
     ["danmaku-service"]="弹幕服务|8084|./danmaku-service"
     ["crawler-service"]="爬虫服务|8085|./crawler-service"
+    ["ad-service"]="广告服务|8087|./ad-service"
 )
 
 # 日志函数
