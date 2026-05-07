@@ -19,4 +19,9 @@ public interface VideoMapper extends BaseMapper<Video> {
      */
     int countByAnimeId(@Param("animeId") Long animeId);
 
+    /**
+     * 批量插入或更新视频数据（根据anime_id和episode唯一索引）
+     */
+    int insertBatchOrUpdate(@Param("list") List<Video> list);
+
 }

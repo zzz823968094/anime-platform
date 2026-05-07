@@ -111,12 +111,12 @@ public class CronTaskController {
      */
     @PostMapping("/sync/{type}")
     public Result<?> quickSync(@PathVariable("type") int type) {
-        if (type != 25 && type != 26 && type != 24) {
+        if (type != 66 && type != 67 && type != 68) {
             return Result.fail("不支持的分类 type，只允许 25/26/24");
         }
 
         cronTaskService.quickSync(type);
-        String typeName = type == 25 ? "日本动漫" : type == 26 ? "欧美动漫" : "中国动漫";
+        String typeName = type == 67 ? "日本动漫" : type == 68 ? "欧美动漫" : "中国动漫";
         return Result.ok("已启动：" + typeName + " 快速同步");
     }
 }

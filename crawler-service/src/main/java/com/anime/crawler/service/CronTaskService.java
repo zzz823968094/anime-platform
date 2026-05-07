@@ -31,7 +31,7 @@ public class CronTaskService {
 
     private final CronTaskMapper taskMapper;
     private final CronTaskLogMapper taskLogMapper;
-    private final CrawlerService crawlerService;
+    private final Https1080Zyk3CrawlerService https1080Zyk3CrawlerService;
 
     private final ThreadPoolTaskScheduler taskScheduler;
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -261,10 +261,10 @@ public class CronTaskService {
             // 根据任务类型执行对应的爬取方法
             if (task.getId() == -1L) {
                 // 快速同步，直接执行
-                crawlerService.crawlNow(task.getTaskType(), hour);
+                https1080Zyk3CrawlerService.updateVideoListByHour(task.getTaskType(), hour);
             } else {
                 // 定时任务执行
-                crawlerService.crawlNow(task.getTaskType(), hour);
+                https1080Zyk3CrawlerService.updateVideoListByHour(task.getTaskType(), hour);
             }
             // 更新日志
             taskLog.setEndTime(new Date());
