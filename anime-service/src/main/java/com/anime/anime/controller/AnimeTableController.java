@@ -35,7 +35,7 @@ public class AnimeTableController {
     public Result<?> list(
             HttpServletRequest request,
             @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "24") int size,
+            @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "status", required = false) Integer status,
             @RequestParam(value = "year", required = false) Integer year,
@@ -49,7 +49,9 @@ public class AnimeTableController {
         String ip = getClientIp(request);
         accessDataService.recordAccess(ip, sign);
         // 记录设备信息
-        deviceStatisticsService.recordDevice(ip, deviceModel, os);
+        if (!(deviceModel.isEmpty() && os.isEmpty())) {
+            deviceStatisticsService.recordDevice(ip, deviceModel, os);
+        }
         return Result.ok(result);
     }
 
@@ -160,7 +162,7 @@ public class AnimeTableController {
         Long totalView = animeTableMapper.sumTotalViewCount();
         Long todayView = animeTableMapper.sumTodayViewCount();
         data.put("totalView", totalView);
-        data.put("todayView",todayView);
+        data.put("todayView", todayView);
 
         // 各分类番剧数
         long jpCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "66").count();
@@ -219,7 +221,7 @@ public class AnimeTableController {
             @RequestParam(value = "date", required = false) String date,
             @RequestParam(value = "days", defaultValue = "7") int days) {
         DeviceStatsDTO stats = new DeviceStatsDTO();
-        
+
         if (date != null && !date.isEmpty()) {
             // 查询指定日期的设备统计
             List<DeviceStatsDTO.DeviceDetailDTO> deviceList = deviceStatisticsService.getDeviceByDate(date).stream()
@@ -247,11 +249,11 @@ public class AnimeTableController {
                     .collect(java.util.stream.Collectors.toList());
             stats.setTrend(trend);
         }
-        
+
         // 总访问人数
         Long totalUserCount = deviceStatisticsService.getTotalUserCount();
         stats.setTotalUserCount(totalUserCount);
-        
+
         return Result.ok(stats);
     }
 
