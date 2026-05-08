@@ -34,7 +34,9 @@ public class AuthFilter implements GlobalFilter, Ordered {
             "/api/access/data/init",
             // 广告查询接口（公开访问）
             "/api/ad/position/",
-            "/api/ad-position/active"
+            "/api/ad-position/active",
+            // 设备统计接口（管理端访问）
+            "/api/anime/device/stats"
     );
 
     @Override

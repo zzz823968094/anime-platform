@@ -3,10 +3,12 @@ package com.anime.anime.controller;
 import com.anime.anime.entity.AnimeTable;
 import com.anime.anime.entity.SearchLog;
 import com.anime.anime.entity.dto.AccessStatsDTO;
+import com.anime.anime.entity.dto.DeviceStatsDTO;
 import com.anime.anime.mapper.AnimeTableMapper;
 import com.anime.anime.mapper.SearchLogMapper;
 import com.anime.anime.service.AccessDataService;
 import com.anime.anime.service.AnimeTableService;
+import com.anime.anime.service.DeviceStatisticsService;
 import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +29,7 @@ public class AnimeTableController {
     private final AnimeTableMapper animeTableMapper;
     private final SearchLogMapper searchLogMapper;
     private final AccessDataService accessDataService;
+    private final DeviceStatisticsService deviceStatisticsService;
 
     @GetMapping("/list")
     public Result<?> list(
@@ -39,10 +42,14 @@ public class AnimeTableController {
             @RequestParam(value = "genre", required = false) String genre,
             @RequestParam(value = "sort", defaultValue = "latest") String sort,
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "sign", required = false) String sign) {
+            @RequestParam(value = "sign", required = false) String sign,
+            @RequestHeader(value = "X-Device-Model", required = false) String deviceModel,
+            @RequestHeader(value = "X-OS", required = false) String os) {
         Page<AnimeTable> result = animeService.listAnime(page, size, type, status, year, genre, sort, keyword);
         String ip = getClientIp(request);
         accessDataService.recordAccess(ip, sign);
+        // 记录设备信息
+        deviceStatisticsService.recordDevice(ip, deviceModel, os);
         return Result.ok(result);
     }
 
@@ -200,6 +207,51 @@ public class AnimeTableController {
         Long totalUserCount = accessDataService.getTotalUserCount();
         stats.setTotalUserCount(totalUserCount + todayAppRealTimeUserCount + todayWebRealTimeUserCount);
 
+        return Result.ok(stats);
+    }
+
+    /**
+     * 设备统计（管理端）
+     * 返回指定日期的设备统计数据
+     */
+    @GetMapping("/device/stats")
+    public Result<DeviceStatsDTO> deviceStats(
+            @RequestParam(value = "date", required = false) String date,
+            @RequestParam(value = "days", defaultValue = "7") int days) {
+        DeviceStatsDTO stats = new DeviceStatsDTO();
+        
+        if (date != null && !date.isEmpty()) {
+            // 查询指定日期的设备统计
+            List<DeviceStatsDTO.DeviceDetailDTO> deviceList = deviceStatisticsService.getDeviceByDate(date).stream()
+                    .map(device -> {
+                        DeviceStatsDTO.DeviceDetailDTO dto = new DeviceStatsDTO.DeviceDetailDTO();
+                        dto.setDate(device.getDate());
+                        dto.setDeviceModel(device.getDeviceModel());
+                        dto.setOs(device.getOs());
+                        dto.setUserCount(device.getUserCount());
+                        return dto;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            stats.setDeviceList(deviceList);
+        } else {
+            // 查询最近N天的设备统计趋势
+            List<DeviceStatsDTO.DeviceDetailDTO> trend = deviceStatisticsService.getDeviceTrend(days).stream()
+                    .map(device -> {
+                        DeviceStatsDTO.DeviceDetailDTO dto = new DeviceStatsDTO.DeviceDetailDTO();
+                        dto.setDate(device.getDate());
+                        dto.setDeviceModel(device.getDeviceModel());
+                        dto.setOs(device.getOs());
+                        dto.setUserCount(device.getUserCount());
+                        return dto;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            stats.setTrend(trend);
+        }
+        
+        // 总访问人数
+        Long totalUserCount = deviceStatisticsService.getTotalUserCount();
+        stats.setTotalUserCount(totalUserCount);
+        
         return Result.ok(stats);
     }
 
