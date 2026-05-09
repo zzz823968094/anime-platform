@@ -84,6 +84,11 @@
                     WHEN id = #{item.id} THEN #{item.vodSub}
                 </foreach>
             </trim>
+            <trim prefix="vod_en = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodEn}
+                </foreach>
+            </trim>
             <trim prefix="vod_pic = CASE" suffix="END,">
                 <foreach collection="list" item="item">
                     WHEN id = #{item.id} THEN #{item.vodPic}
@@ -119,9 +124,24 @@
                     WHEN id = #{item.id} THEN #{item.vodContent}
                 </foreach>
             </trim>
-            <trim prefix="update_at = CASE" suffix="END,">
+            <trim prefix="vod_play_from = CASE" suffix="END,">
                 <foreach collection="list" item="item">
-                    WHEN id = #{item.id} THEN NOW()
+                    WHEN id = #{item.id} THEN #{item.vodPlayFrom}
+                </foreach>
+            </trim>
+            <trim prefix="type_id = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.typeId}
+                </foreach>
+            </trim>
+            <trim prefix="type_name = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.typeName}
+                </foreach>
+            </trim>
+            <trim prefix="vod_time = CASE" suffix="END,">
+                <foreach collection="list" item="item">
+                    WHEN id = #{item.id} THEN #{item.vodTime}
                 </foreach>
             </trim>
         </trim>

@@ -265,4 +265,7 @@ public class AnimeTable {
 
     @JsonProperty("type_name")
     private String typeName;                // 分类名称（冗余字段，便于直接展示）
+    
+    @TableField(exist = false)
+    private java.util.Date updatedAt;       // 更新时间（非数据库字段，用于标记记录更新时间）
 }

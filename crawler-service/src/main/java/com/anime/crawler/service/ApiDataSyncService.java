@@ -104,6 +104,9 @@ public class ApiDataSyncService {
                                    List<AnimeTable> newAnimeList,
                                    List<AnimeTable> updateAnimeList,
                                    List<Video> allVideos) {
+        // 检查是否有完整数据（判断是否为详情接口返回）
+        boolean isDetailData = item.containsKey("vod_content") || item.containsKey("vod_play_url");
+        
         // 解析AnimeTable数据
         AnimeTable animeTable = JSONUtil.toBean(item, AnimeTable.class);
         
@@ -116,10 +119,18 @@ public class ApiDataSyncService {
         AnimeTable existingAnime = animeTableMapper.selectByVodId(animeTable.getVodId());
         
         if (existingAnime != null) {
-            // 已存在，更新
-            animeTable.setId(existingAnime.getId());
-            updateAnimeList.add(animeTable);
-            log.debug("更新动漫: vodId={}, name={}", animeTable.getVodId(), animeTable.getVodName());
+            // 已存在，需要合并数据
+            if (isDetailData) {
+                // 详情数据：完整更新
+                animeTable.setId(existingAnime.getId());
+                updateAnimeList.add(animeTable);
+                log.debug("更新动漫(详情): vodId={}, name={}", animeTable.getVodId(), animeTable.getVodName());
+            } else {
+                // 列表数据：只更新存在的字段，避免用null覆盖
+                mergeListData(existingAnime, item);
+                updateAnimeList.add(existingAnime);
+                log.debug("更新动漫(列表): vodId={}, name={}", existingAnime.getVodId(), existingAnime.getVodName());
+            }
         } else {
             // 不存在，新增
             long id = IdUtil.nextId();
@@ -135,6 +146,36 @@ public class ApiDataSyncService {
             allVideos.addAll(videos);
             log.debug("解析到 {} 个视频", videos.size());
         }
+    }
+    
+    /**
+     * 合并列表数据到已有记录（只更新非null字段）
+     */
+    private void mergeListData(AnimeTable existing, JSONObject item) {
+        // 只更新列表接口返回的字段
+        if (item.containsKey("vod_name")) {
+            existing.setVodName(item.getStr("vod_name"));
+        }
+        if (item.containsKey("type_id")) {
+            existing.setTypeId(item.getInt("type_id"));
+        }
+        if (item.containsKey("type_name")) {
+            existing.setTypeName(item.getStr("type_name"));
+        }
+        if (item.containsKey("vod_en")) {
+            existing.setVodEn(item.getStr("vod_en"));
+        }
+        if (item.containsKey("vod_time")) {
+            existing.setVodTime(item.getDate("vod_time"));
+        }
+        if (item.containsKey("vod_remarks")) {
+            existing.setVodRemarks(item.getStr("vod_remarks"));
+        }
+        if (item.containsKey("vod_play_from")) {
+            existing.setVodPlayFrom(item.getStr("vod_play_from"));
+        }
+        // 更新时间戳
+        existing.setUpdatedAt(new java.util.Date());
     }
     
     /**
