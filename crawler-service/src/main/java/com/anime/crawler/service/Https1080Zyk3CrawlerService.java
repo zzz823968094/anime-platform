@@ -2,6 +2,8 @@ package com.anime.crawler.service;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
@@ -68,6 +70,24 @@ public class Https1080Zyk3CrawlerService {
     private final ApiDataSyncService apiDataSyncService;
 
     /**
+     * 使用代理发送HTTP请求
+     * @param url 请求URL
+     * @param timeout 超时时间（毫秒）
+     * @return 响应内容
+     */
+    private String getWithProxy(String url, int timeout) {
+        try {
+            HttpResponse response = HttpRequest.get(url)
+                    .timeout(timeout)
+                    .execute();
+            return response.body();
+        } catch (Exception e) {
+            log.error("HTTP请求失败: {}", url, e);
+            throw e;
+        }
+    }
+
+    /**
      * 通用的API数据获取和同步方法
      * @param apiUrl API地址
      * @param description 操作描述（用于日志）
@@ -76,7 +96,7 @@ public class Https1080Zyk3CrawlerService {
         try {
             log.info("开始{}", description);
             
-            String result = HttpUtil.get(apiUrl, 60000);
+            String result = getWithProxy(apiUrl, 60000);
             if (StrUtil.isEmpty(result)) {
                 log.warn("API返回数据为空: {}", apiUrl);
                 return;
@@ -108,7 +128,7 @@ public class Https1080Zyk3CrawlerService {
             log.info("开始获取最近{}小时内更新的视频数据(type={})", hour, type);
             
             // 获取第一页数据
-            String result = HttpUtil.get(url + "&pg=1", 60000);
+            String result = getWithProxy(url + "&pg=1", 60000);
             if (StrUtil.isEmpty(result)) {
                 log.warn("API返回数据为空");
                 return;
@@ -139,7 +159,7 @@ public class Https1080Zyk3CrawlerService {
                     try {
                         Thread.sleep(500); // 页间延迟
                         String nextPageUrl = VIDEO_UPDATE_BY_HOUR + hour + "&t=" + type + "&pg=" + page;
-                        String nextPageResult = HttpUtil.get(nextPageUrl, 60000);
+                        String nextPageResult = getWithProxy(nextPageUrl, 60000);
                         
                         if (StrUtil.isNotEmpty(nextPageResult) && JSONUtil.isTypeJSON(nextPageResult)) {
                             try {
@@ -181,7 +201,7 @@ public class Https1080Zyk3CrawlerService {
             
             // 获取第一页数据
             String url = VIDEO_LIST_URL + "&t=" + type + "&pg=" + page;
-            String result = HttpUtil.get(url, 60000);
+            String result = getWithProxy(url, 60000);
             
             if (StrUtil.isEmpty(result)) {
                 log.warn("API返回数据为空");
@@ -213,7 +233,7 @@ public class Https1080Zyk3CrawlerService {
                     try {
                         Thread.sleep(500); // 页间延迟
                         String nextPageUrl = VIDEO_LIST_URL + "&t=" + type + "&pg=" + currentPage;
-                        String nextPageResult = HttpUtil.get(nextPageUrl, 60000);
+                        String nextPageResult = getWithProxy(nextPageUrl, 60000);
                         
                         if (StrUtil.isNotEmpty(nextPageResult) && JSONUtil.isTypeJSON(nextPageResult)) {
                             try {
@@ -312,7 +332,7 @@ public class Https1080Zyk3CrawlerService {
             try {
                 Thread.sleep(500); // 页间延迟降低到500ms
                 String nextPageUrl = VIDEO_LIST_URL + "&t=" + type + "&pg=" + (page + 1);
-                String nextPageResult = HttpUtil.get(nextPageUrl, 60000);
+                String nextPageResult = getWithProxy(nextPageUrl, 60000);
                 if (StrUtil.isNotEmpty(nextPageResult) && JSONUtil.isTypeJSON(nextPageResult)) {
                     passData(type, nextPageResult);
                 }
@@ -433,7 +453,7 @@ public class Https1080Zyk3CrawlerService {
     public void getDetailAndSave(String ids, Map<Integer, AnimeTable> existingMap) {
         try {
             String url = VIDEO_DETAIL_URL + ids;
-            String result = HttpUtil.get(url, 60000);
+            String result = getWithProxy(url, 60000);
 
             if (StrUtil.isEmpty(result) || !JSONUtil.isTypeJSON(result)) {
                 log.warn("详情数据无效，IDs: {}", ids);
