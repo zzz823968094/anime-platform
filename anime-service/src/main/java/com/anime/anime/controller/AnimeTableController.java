@@ -49,7 +49,7 @@ public class AnimeTableController {
         String ip = getClientIp(request);
         accessDataService.recordAccess(ip, sign);
         // 记录设备信息
-        if (!(deviceModel.isEmpty() && os.isEmpty())) {
+        if (deviceModel != null && os != null && !deviceModel.isEmpty() && !os.isEmpty()) {
             deviceStatisticsService.recordDevice(ip, deviceModel, os);
         }
         return Result.ok(result);
