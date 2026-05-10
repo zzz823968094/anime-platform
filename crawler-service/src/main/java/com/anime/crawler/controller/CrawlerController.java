@@ -24,13 +24,13 @@ public class CrawlerController {
 
     @PutMapping("/crawl")
     public Result<?> crawl(@RequestParam("id") Long id) {
-        if (null == id) {
-            return Result.fail("参数错误");
-        }
-        AnimeTable animeTable = animeTableMapper.selectById(id);
-        Map<Integer, AnimeTable> existingMap = new HashMap<>();
-        existingMap.put(animeTable.getVodId(),animeTable);
-        https1080Zyk3CrawlerService.getDetailAndSave(animeTable.getVodId().toString(), existingMap);
+//        if (null == id) {
+//            return Result.fail("参数错误");
+//        }
+//        AnimeTable animeTable = animeTableMapper.selectById(id);
+//        Map<Integer, AnimeTable> existingMap = new HashMap<>();
+//        existingMap.put(animeTable.getVodId(),animeTable);
+//        https1080Zyk3CrawlerService.getDetailAndSave(animeTable.getVodId().toString(), existingMap);
         return Result.ok();
     }
 
@@ -42,7 +42,7 @@ public class CrawlerController {
         // 直接调用服务层方法,由CrawlerService内部的线程池管理并发
         Integer type = request != null ? request.getType() : null;
         Integer hour = request != null ? request.getHour() : null;
-        https1080Zyk3CrawlerService.updateVideoListByHour(type, hour);
+        https1080Zyk3CrawlerService.clawerByHour(type, hour, 1);
         return Result.ok("已启动：爬取所有分类最新数据");
     }
 
@@ -56,7 +56,7 @@ public class CrawlerController {
             return Result.fail("不支持的分类 type，只允许 25/26/24");
         }
         // 直接调用服务层方法,由CrawlerService内部的线程池管理并发,避免线程数量失控
-        https1080Zyk3CrawlerService.getVideoList(type,1);
+        https1080Zyk3CrawlerService.clawerByType(type, 1);
         String typeName = type == 66 ? "国产动漫" : type == 67 ? "日韩动漫" : type == 68 ? "欧美动漫" : type == 69 ? "港台动漫" : "海外动漫";
         return Result.ok("已启动：" + typeName + " 增量爬取（遇到10个无变化自动停止）");
     }

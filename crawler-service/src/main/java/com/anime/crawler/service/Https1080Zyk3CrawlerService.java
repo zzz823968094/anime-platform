@@ -1,33 +1,25 @@
 package com.anime.crawler.service;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.nacos.shaded.com.google.common.base.Joiner;
 import com.anime.common.exception.BusinessException;
 import com.anime.common.utils.IdUtil;
 import com.anime.crawler.entity.AnimeTable;
 import com.anime.crawler.entity.Video;
 import com.anime.crawler.mapper.AnimeTableMapper;
 import com.anime.crawler.mapper.VideoMapper;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * 1080资源站爬虫服务（优化版）
@@ -43,607 +35,406 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class Https1080Zyk3CrawlerService {
-    private static final String VIDEO_LIST_URL = "https://api.yzzy-api.com/inc/api_mac10.php?ac=list";
-    private static final String VIDEO_DETAIL_URL = "https://api.yzzy-api.com/inc/api_mac10.php?ac=detail&ids=";
-    private static final String VIDEO_UPDATE_BY_HOUR = "https://api.yzzy-api.com/inc/api_mac10.php?ac=detail&h=";
-
-    // 批量处理大小
-    private static final int BATCH_SIZE = 100;           // 数据库批量插入大小
-    private static final int DETAIL_BATCH_SIZE = 20;     // 详情接口每批ID数量
-    private static final int MAX_CONCURRENT = 5;         // 最大并发数
-
-    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("\\D+");
-
-    // 线程池用于并发获取详情数据
-    private final ExecutorService executorService = Executors.newFixedThreadPool(
-            MAX_CONCURRENT,
-            r -> {
-                Thread thread = new Thread(r);
-                thread.setName("yzzy-crawler-" + thread.getId());
-                thread.setDaemon(true);
-                return thread;
-            }
-    );
+    private static final String VIDEO_LIST_URL = "https://api.yzzy-api.com/inc/apijson.php?ac=list";
+    private static final String VIDEO_DETAIL_URL = "https://api.yzzy-api.com/inc/apijson.php?ac=detail&ids=";
+    private static final String VIDEO_UPDATE_BY_HOUR = "https://api.yzzy-api.com/inc/apijson.php?ac=detail&h=";
 
     private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
-    private final ApiDataSyncService apiDataSyncService;
 
-    /**
-     * 使用代理发送HTTP请求
-     * @param url 请求URL
-     * @param timeout 超时时间（毫秒）
-     * @return 响应内容
-     */
-    private String getWithProxy(String url, int timeout) {
-        try {
-            HttpResponse response = HttpRequest.get(url)
-                    .timeout(timeout)
-                    .execute();
-            return response.body();
-        } catch (Exception e) {
-            log.error("HTTP请求失败: {}", url, e);
-            throw e;
+    public void clawerByHour(Integer type, Integer hour, Integer page) {
+        String url = VIDEO_UPDATE_BY_HOUR + hour + "&t=" + type + "&pg=" + page;
+        JSONObject listResult = httpGet(url);
+        Integer pagecount = listResult.getInt("pagecount");
+        JSONArray detailJsonArray = listResult.getJSONArray("list");
+        processAnimeData(detailJsonArray);
+        if (page < pagecount) {
+            clawerByHour(type, hour, page + 1);  // 修复：应该递归调用clawerByHour
+        }
+    }
+
+    public void clawerByType(Integer type, Integer page) {
+        String url = VIDEO_LIST_URL + "&t=" + type + "&pg=" + page;
+        JSONObject listResult = httpGet(url);
+        Integer pagecount = listResult.getInt("pagecount");
+        JSONArray jsonArray = listResult.getJSONArray("list");
+        List<Integer> ids = new ArrayList<>();
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject item = jsonArray.getJSONObject(i);
+            Integer vodId = item.getInt("vod_id");
+            ids.add(vodId);
+        }
+        String idsString = Joiner.on(",").join(ids);
+        JSONObject detailResult = httpGet(VIDEO_DETAIL_URL + idsString);
+        JSONArray detailJsonArray = detailResult.getJSONArray("list");
+        processAnimeData(detailJsonArray);
+        if (page < pagecount) {
+            clawerByType(type, page + 1);
         }
     }
 
     /**
-     * 通用的API数据获取和同步方法
-     * @param apiUrl API地址
-     * @param description 操作描述（用于日志）
-     */
-    private void fetchAndSyncData(String apiUrl, String description) {
-        try {
-            log.info("开始{}", description);
-            
-            String result = getWithProxy(apiUrl, 60000);
-            if (StrUtil.isEmpty(result)) {
-                log.warn("API返回数据为空: {}", apiUrl);
-                return;
-            }
-            
-            if (!JSONUtil.isTypeJSON(result)) {
-                log.warn("API返回数据格式错误: {}", apiUrl);
-                return;
-            }
-            
-            // 使用ApiDataSyncService进行数据同步
-            apiDataSyncService.syncFromApiResponse(result);
-            log.info("{}完成", description);
-            
-        } catch (Exception e) {
-            log.error("{}失败", description, e);
-            throw new BusinessException(description + "失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 根据小时增量更新视频列表（处理所有页面）
-     * @param type 类型ID
-     * @param hour 小时数
-     */
-    public void updateVideoListByHour(Integer type, Integer hour) {
-        try {
-            String url = VIDEO_UPDATE_BY_HOUR + hour + "&t=" + type;
-            log.info("开始获取最近{}小时内更新的视频数据(type={})", hour, type);
-            
-            // 获取第一页数据
-            String result = getWithProxy(url + "&pg=1", 60000);
-            if (StrUtil.isEmpty(result)) {
-                log.warn("API返回数据为空");
-                return;
-            }
-            
-            if (!JSONUtil.isTypeJSON(result)) {
-                log.warn("API返回数据格式错误");
-                return;
-            }
-            
-            // 使用ApiDataSyncService进行数据同步
-            try {
-                apiDataSyncService.syncFromApiResponse(result);
-            } catch (Exception e) {
-                log.error("第1页数据同步失败，但继续处理后续页面", e);
-            }
-            
-            // 解析总页数，继续处理后续页面
-            JSONObject resultObj = JSONUtil.parseObj(result);
-            log.info("第一页响应结果: {}", resultObj.toString().substring(0, Math.min(200, resultObj.toString().length())));
-            Integer pageCount = resultObj.getInt("pagecount");
-            log.info("解析到总页数: {}", pageCount);
-            
-            if (pageCount != null && pageCount > 1) {
-                log.info("共{}页，开始处理第2-{}页", pageCount, pageCount);
-                // 处理第2页到最后一页
-                for (int page = 2; page <= pageCount; page++) {
-                    try {
-                        Thread.sleep(500); // 页间延迟
-                        String nextPageUrl = VIDEO_UPDATE_BY_HOUR + hour + "&t=" + type + "&pg=" + page;
-                        String nextPageResult = getWithProxy(nextPageUrl, 60000);
-                        
-                        if (StrUtil.isNotEmpty(nextPageResult) && JSONUtil.isTypeJSON(nextPageResult)) {
-                            try {
-                                apiDataSyncService.syncFromApiResponse(nextPageResult);
-                                log.info("已处理第 {}/{} 页", page, pageCount);
-                            } catch (Exception e) {
-                                log.error("第 {} 页数据同步失败，但继续处理后续页面", page, e);
-                            }
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        log.error("线程被中断", e);
-                        break;
-                    } catch (Exception e) {
-                        log.error("获取第 {} 页失败", page, e);
-                    }
-                }
-            }
-            
-            log.info("获取最近{}小时内更新的视频数据完成", hour);
-            
-        } catch (Exception e) {
-            log.error("更新视频列表失败", e);
-            throw new BusinessException("更新视频列表失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 获取视频列表并处理数据（入口方法 - 处理所有页面）
+     * 处理动漫数据，根据vodId判断是新增还是更新
+     * 优化：使用批量查询替代逐条查询，减少数据库交互
      *
-     * @param type 类型ID
-     * @param page 起始页码（通常为1）
+     * @param detailJsonArray 动漫详情JSON数组
      */
-    @Async
-    public void getVideoList(Integer type, Integer page) {
-        long startTime = System.currentTimeMillis();
-        try {
-            log.info("开始爬取type={}的数据，从第{}页开始", type, page);
-            
-            // 获取第一页数据
-            String url = VIDEO_LIST_URL + "&t=" + type + "&pg=" + page;
-            String result = getWithProxy(url, 60000);
-            
-            if (StrUtil.isEmpty(result)) {
-                log.warn("API返回数据为空");
-                return;
-            }
-            
-            if (!JSONUtil.isTypeJSON(result)) {
-                log.warn("API返回数据格式错误");
-                return;
-            }
-            
-            // 使用ApiDataSyncService进行数据同步
-            try {
-                apiDataSyncService.syncFromApiResponse(result);
-            } catch (Exception e) {
-                log.error("第{}页数据同步失败，但继续处理后续页面", page, e);
-            }
-            
-            // 解析总页数，继续处理后续页面
-            JSONObject resultObj = JSONUtil.parseObj(result);
-            Integer pageCount = resultObj.getInt("pagecount");
-            log.info("解析到总页数: {}", pageCount);
-            
-            if (pageCount != null && pageCount > page) {
-                log.info("共{}页，开始处理第{}-{}页", pageCount, page + 1, pageCount);
-                // 处理后续页面
-                for (int currentPage = page + 1; currentPage <= pageCount; currentPage++) {
-                    log.info("开始处理第 {} 页", currentPage);
-                    try {
-                        Thread.sleep(500); // 页间延迟
-                        String nextPageUrl = VIDEO_LIST_URL + "&t=" + type + "&pg=" + currentPage;
-                        String nextPageResult = getWithProxy(nextPageUrl, 60000);
-                        
-                        if (StrUtil.isNotEmpty(nextPageResult) && JSONUtil.isTypeJSON(nextPageResult)) {
-                            try {
-                                apiDataSyncService.syncFromApiResponse(nextPageResult);
-                                log.info("已处理第 {}/{} 页", currentPage, pageCount);
-                            } catch (Exception e) {
-                                log.error("第 {} 页数据同步失败，但继续处理后续页面", currentPage, e);
-                            }
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        log.error("线程被中断", e);
-                        break;
-                    } catch (Exception e) {
-                        log.error("获取第 {} 页失败", currentPage, e);
-                    }
-                }
-            }
-
-            long elapsed = System.currentTimeMillis() - startTime;
-            long hours = TimeUnit.MILLISECONDS.toHours(elapsed);
-            long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsed) % 60;
-            long seconds = TimeUnit.MILLISECONDS.toSeconds(elapsed) % 60;
-            log.info("爬取完成，耗时: {}时{}分{}秒", hours, minutes, seconds);
-        } catch (Exception e) {
-            log.error("爬取失败", e);
-            throw new BusinessException("爬取失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 异步处理列表数据
-     */
-    @Async
-    public void processListAsync(Integer type, String result) {
-        passData(type, result);
-    }
-
-    /**
-     * 处理列表数据，批量获取详情并保存（优化版）
-     *
-     * @param type   类型ID
-     * @param result JSON结果
-     */
-    public void passData(Integer type, String result) {
-        JSONObject resultObj = JSONUtil.parseObj(result);
-        Integer code = resultObj.getInt("code");
-        if (code != 1) {
-            log.error("API返回错误码: {}", code);
+    public void processAnimeData(JSONArray detailJsonArray) {
+        if (detailJsonArray == null || detailJsonArray.isEmpty()) {
             return;
         }
 
-        Integer page = resultObj.getInt("page");
-        Integer pageCount = resultObj.getInt("pagecount");
-        Integer total = resultObj.getInt("total");
-        JSONArray list = resultObj.getJSONArray("list");
+        List<AnimeTable> insertList = new ArrayList<>();
+        List<AnimeTable> updateList = new ArrayList<>();
 
-        if (list == null || list.isEmpty()) {
-            log.warn("第 {} 页数据为空", page);
-            return;
-        }
-
-        log.info("处理第 {}/{} 页，总数: {}, 本页: {} 条", page, pageCount, total, list.size());
-
-        // 收集所有vodId
-        List<Integer> vodIds = new ArrayList<>(list.size());
-        for (int i = 0; i < list.size(); i++) {
-            JSONObject object = list.getJSONObject(i);
-            Integer vodId = object.getInt("vod_id");
+        // 第一步：收集所有vodId
+        List<Integer> vodIds = new ArrayList<>(detailJsonArray.size());
+        for (int i = 0; i < detailJsonArray.size(); i++) {
+            JSONObject item = detailJsonArray.getJSONObject(i);
+            Integer vodId = item.getInt("vod_id");
             if (vodId != null) {
                 vodIds.add(vodId);
             }
         }
 
-        if (vodIds.isEmpty()) {
-            log.warn("没有有效的vodId");
+        // 第二步：批量查询已存在的动漫（关键优化：避免N+1查询）
+        java.util.Map<Integer, AnimeTable> existingMap = new java.util.HashMap<>();
+        if (!vodIds.isEmpty()) {
+            List<AnimeTable> existingAnimes = animeTableMapper.selectByVodIds(vodIds);
+            for (AnimeTable existing : existingAnimes) {
+                existingMap.put(existing.getVodId(), existing);
+            }
+            log.debug("批量查询到 {} 条已存在的动漫记录", existingMap.size());
+        }
+
+        // 第三步：处理每条数据
+        for (int i = 0; i < detailJsonArray.size(); i++) {
+            JSONObject item = detailJsonArray.getJSONObject(i);
+            String vodPlayUrl = item.getStr("vod_play_url");
+            Integer vodId = item.getInt("vod_id");
+
+            // 映射动漫数据
+            AnimeTable animeTable = mapJsonToAnimeTable(item);
+
+            // 从内存Map中查找是否已存在（O(1)复杂度）
+            AnimeTable existingAnime = vodId != null ? existingMap.get(vodId) : null;
+
+            if (existingAnime != null) {
+                // 存在则使用原有ID，进行更新
+                animeTable.setId(existingAnime.getId());
+                updateList.add(animeTable);
+            } else {
+                // 不存在则生成新ID，进行插入
+                long newId = IdUtil.nextId();
+                animeTable.setId(newId);
+                insertList.add(animeTable);
+            }
+
+            // 处理视频数据，获取集数
+            if (animeTable.getId() != null && vodPlayUrl != null && !vodPlayUrl.isEmpty()) {
+                Integer count = processVideoData(vodPlayUrl, animeTable.getId());
+                animeTable.setVodTotal(count);
+                log.info("动漫 {} (ID: {}, vodId: {}) 解析到 {} 集视频",
+                        animeTable.getVodName(), animeTable.getId(), vodId, count);
+            } else {
+                animeTable.setVodTotal(0);
+            }
+        }
+
+        // 第四步：批量插入新数据
+        batchInsertAnime(insertList);
+
+        // 第五步：批量更新已有数据
+        batchUpdateAnime(updateList);
+    }
+
+    /**
+     * 批量插入动漫数据
+     */
+    private void batchInsertAnime(List<AnimeTable> insertList) {
+        if (insertList.isEmpty()) {
             return;
         }
 
-        // 第一步：批量查询已存在的记录（一次性查询，减少DB压力）
-        Map<Integer, AnimeTable> existingAnimeMap = batchQueryExisting(vodIds);
-
-        // 第二步：筛选需要更新的ID（只获取有更新或新增的数据）
-        List<Integer> needFetchIds = filterNeedUpdate(vodIds, existingAnimeMap, list);
-
-        if (needFetchIds.isEmpty()) {
-            log.info("第 {} 页无需更新的数据", page);
-        } else {
-            log.info("需要获取详情的ID数量: {}", needFetchIds.size());
-            // 第三步：并发批量获取详情数据
-            fetchDetailsConcurrently(needFetchIds, type, existingAnimeMap);
-        }
-
-        // 递归处理下一页
-        if (page < pageCount) {
-            try {
-                Thread.sleep(500); // 页间延迟降低到500ms
-                String nextPageUrl = VIDEO_LIST_URL + "&t=" + type + "&pg=" + (page + 1);
-                String nextPageResult = getWithProxy(nextPageUrl, 60000);
-                if (StrUtil.isNotEmpty(nextPageResult) && JSONUtil.isTypeJSON(nextPageResult)) {
-                    passData(type, nextPageResult);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("线程被中断", e);
-            } catch (Exception e) {
-                log.error("获取第 {} 页失败", page + 1, e);
-            }
-        } else {
-            log.info("所有页面处理完成");
-        }
-    }
-
-    /**
-     * 批量查询已存在的动漫记录
-     */
-    private Map<Integer, AnimeTable> batchQueryExisting(List<Integer> vodIds) {
-        if (vodIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<AnimeTable> existingAnimes = animeTableMapper.selectByVodIds(vodIds);
-        Map<Integer, AnimeTable> map = new HashMap<>(existingAnimes.size());
-        for (AnimeTable anime : existingAnimes) {
-            map.put(anime.getVodId(), anime);
-        }
-        log.debug("批量查询到 {} 条已存在记录", map.size());
-        return map;
-    }
-
-    /**
-     * 筛选需要更新的ID（优化：避免获取无变化的详情）
-     */
-    private List<Integer> filterNeedUpdate(List<Integer> vodIds,
-                                           Map<Integer, AnimeTable> existingMap,
-                                           JSONArray list) {
-        List<Integer> needFetch = new ArrayList<>();
-
-        for (int i = 0; i < list.size(); i++) {
-            JSONObject object = list.getJSONObject(i);
-            Integer vodId = object.getInt("vod_id");
-            if (vodId == null) continue;
-
-            // 新数据，需要获取详情
-            if (!existingMap.containsKey(vodId)) {
-                needFetch.add(vodId);
-                continue;
-            }
-
-            // 已有数据，检查是否有更新（通过vod_time判断）
-            AnimeTable existing = existingMap.get(vodId);
-            String newTime = object.getStr("vod_time");
-            if (StrUtil.isNotEmpty(newTime) && existing.getVodTime() != null) {
-                // 如果更新时间不同，可能需要更新
-                if (!newTime.equals(existing.getVodTime().toString())) {
-                    needFetch.add(vodId);
-                }
-            } else {
-                // 无法判断，保守起见获取详情
-                needFetch.add(vodId);
-            }
-        }
-
-        return needFetch;
-    }
-
-    /**
-     * 并发获取详情数据
-     */
-    private void fetchDetailsConcurrently(List<Integer> vodIds, Integer type,
-                                          Map<Integer, AnimeTable> existingMap) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-        // 分批处理
-        for (int i = 0; i < vodIds.size(); i += DETAIL_BATCH_SIZE) {
-            int endIndex = Math.min(i + DETAIL_BATCH_SIZE, vodIds.size());
-            List<Integer> batchIds = vodIds.subList(i, endIndex);
-            String idsStr = batchIds.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(","));
-
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                try {
-                    getDetailAndSave(idsStr, existingMap);
-                } catch (Exception e) {
-                    log.error("批量获取详情失败，IDs: {}", idsStr, e);
-                }
-            }, executorService);
-
-            futures.add(future);
-
-            // 控制并发节奏，避免瞬间大量请求
-            if (futures.size() >= MAX_CONCURRENT) {
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-                futures.clear();
-                try {
-                    Thread.sleep(200); // 每批之间短暂延迟
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-
-        // 等待剩余任务完成
-        if (!futures.isEmpty()) {
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        }
-    }
-
-    /**
-     * 获取详情数据并保存到数据库（优化版）
-     *
-     * @param ids         视频ID列表（逗号分隔）
-     * @param existingMap 已存在的动漫映射表
-     */
-    public void getDetailAndSave(String ids, Map<Integer, AnimeTable> existingMap) {
         try {
-            String url = VIDEO_DETAIL_URL + ids;
-            String result = getWithProxy(url, 60000);
-
-            if (StrUtil.isEmpty(result) || !JSONUtil.isTypeJSON(result)) {
-                log.warn("详情数据无效，IDs: {}", ids);
-                return;
+            int batchSize = 100;
+            for (int i = 0; i < insertList.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, insertList.size());
+                List<AnimeTable> batch = insertList.subList(i, end);
+                animeTableMapper.insertBatchIgnore(batch);
             }
-
-            JSONObject resultObj = JSONUtil.parseObj(result);
-            if (resultObj.getInt("code") != 1) {
-                log.warn("详情接口返回错误码: {}", resultObj.getInt("code"));
-                return;
-            }
-
-            JSONArray list = resultObj.getJSONArray("list");
-            if (list == null || list.isEmpty()) {
-                return;
-            }
-
-            // 处理详情数据
-            List<AnimeTable> newAnimeList = new ArrayList<>();
-            List<AnimeTable> updateAnimeList = new ArrayList<>();
-            List<Video> allVideos = new ArrayList<>();
-
-            for (int i = 0; i < list.size(); i++) {
-                try {
-                    JSONObject object = list.getJSONObject(i);
-                    AnimeTable bean = JSONUtil.toBean(object, AnimeTable.class);
-
-                    if (bean.getVodId() == null) {
-                        continue;
-                    }
-
-                    // 检查是否需要更新
-                    if (existingMap.containsKey(bean.getVodId())) {
-                        AnimeTable existingAnime = existingMap.get(bean.getVodId());
-
-                        // 计算新爬取的集数
-                        String vodPlayUrl = object.getStr("vod_play_url");
-                        int newEpisodeCount = 0;
-                        if (StrUtil.isNotEmpty(vodPlayUrl)) {
-                            newEpisodeCount = vodPlayUrl.split("#").length;
-                        }
-
-                        // 如果数据库中已有的集数 >= 新爬取的集数，跳过
-                        if (existingAnime.getVodTotal() != null && existingAnime.getVodTotal() >= newEpisodeCount) {
-                            continue;
-                        }
-
-                        // 有更新，使用已有ID
-                        bean.setId(existingAnime.getId());
-                        updateAnimeList.add(bean);
-                    } else {
-                        // 不存在，生成新ID
-                        bean.setId(IdUtil.nextId());
-                        newAnimeList.add(bean);
-                    }
-
-                    // 处理视频列表
-                    String vodPlayUrl = object.getStr("vod_play_url");
-                    if (StrUtil.isNotEmpty(vodPlayUrl)) {
-                        List<Video> videos = processVideoList(bean.getId(), vodPlayUrl);
-                        bean.setVodTotal(videos.size());
-                        allVideos.addAll(videos);
-                    }
-                } catch (Exception e) {
-                    log.error("处理详情数据异常", e);
-                }
-            }
-
-            // 批量插入/更新
-            if (!newAnimeList.isEmpty() || !updateAnimeList.isEmpty() || !allVideos.isEmpty()) {
-                insertBatch(newAnimeList, updateAnimeList, allVideos);
-            }
-
+            log.info("批量新增动漫数据: {} 条", insertList.size());
         } catch (Exception e) {
-            log.error("获取详情数据失败，IDs: {}", ids, e);
+            log.error("批量插入动漫数据失败", e);
         }
     }
 
     /**
-     * 处理视频列表，解析播放地址（优化版）
+     * 批量更新动漫数据
      */
-    private List<Video> processVideoList(Long animeId, String vodPlayUrl) {
-        List<Video> list = new ArrayList<>();
-        String[] episodes = vodPlayUrl.split("#");
-        LocalDateTime now = LocalDateTime.now();
+    private void batchUpdateAnime(List<AnimeTable> updateList) {
+        if (updateList.isEmpty()) {
+            return;
+        }
 
-        for (String episode : episodes) {
-            try {
-                String trimmedEpisode = episode.trim();
-                if (StrUtil.isEmpty(trimmedEpisode)) {
+        try {
+            int batchSize = 100;
+            for (int i = 0; i < updateList.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, updateList.size());
+                List<AnimeTable> batch = updateList.subList(i, end);
+                animeTableMapper.updateBatchById(batch);
+            }
+            log.info("批量更新动漫数据: {} 条", updateList.size());
+        } catch (Exception e) {
+            log.error("批量更新动漫数据失败", e);
+        }
+    }
+
+    /**
+     * 处理视频数据，从vod_play_url中解析集数和播放地址
+     * 格式：第01集$https://...#第02集$https://...
+     *
+     * @param vodPlayUrl 播放URL字符串
+     * @param animeId    动漫ID
+     * @return 解析后的视频数量
+     */
+    public Integer processVideoData(String vodPlayUrl, Long animeId) {
+        if (vodPlayUrl == null || vodPlayUrl.trim().isEmpty()) {
+            log.warn("播放URL为空，animeId: {}", animeId);
+            return 0;
+        }
+
+        String trim = vodPlayUrl.trim();
+        List<Video> videoList = new ArrayList<>();
+
+        try {
+            // 按 # 分割不同的集数
+            String[] episodes = trim.split("#");
+
+            for (int i = 0; i < episodes.length; i++) {
+                String episodeStr = episodes[i].trim();
+                if (episodeStr.isEmpty()) {
                     continue;
                 }
 
-                String[] parts = trimmedEpisode.split("\\$", 2);
-                if (parts.length < 2) {
+                // 按 $ 分割集数标题和URL
+                String[] parts = episodeStr.split("\\$");
+                if (parts.length != 2) {
+                    log.warn("视频数据格式错误: {}", episodeStr);
                     continue;
                 }
 
-                String title = parts[0].trim();
-                String videoUrl = parts[1].trim();
+                String title = parts[0].trim();  // 例如：第01集
+                String m3u8Url = parts[1].trim(); // 播放地址
 
-                if (StrUtil.isEmpty(title) || StrUtil.isEmpty(videoUrl)) {
-                    continue;
-                }
-
+                // 创建Video对象
                 Video video = new Video();
                 video.setId(IdUtil.nextId());
-                video.setTitle(title);
                 video.setAnimeId(animeId);
-                video.setStatus(1);
-                video.setM3u8Url(videoUrl);
-                video.setCreatedAt(now);
-                video.setUpdatedAt(now);
+                video.setEpisode(i + 1);  // 集数从1开始
+                video.setTitle(title);
+                video.setM3u8Url(m3u8Url);
+                video.setStatus(1);  // 默认状态为正常
+                video.setViewCount(0);
+                video.setCreatedAt(LocalDateTime.now());
+                video.setUpdatedAt(LocalDateTime.now());
 
-                // 提取集数
-                String number = NON_DIGIT_PATTERN.matcher(title).replaceAll("");
-                if (StrUtil.isNotEmpty(number)) {
-                    try {
-                        video.setEpisode(Integer.parseInt(number));
-                    } catch (NumberFormatException e) {
-                        video.setEpisode(0);
-                    }
-                } else {
-                    video.setEpisode(0);
-                }
-
-                list.add(video);
-            } catch (Exception e) {
-                // 单条失败不影响其他数据
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * 批量插入动漫和视频数据（优化版）
-     */
-    private void insertBatch(List<AnimeTable> newAnimeList, List<AnimeTable> updateAnimeList, List<Video> videoList) {
-        try {
-            int newCount = 0, updateCount = 0, videoCount = 0;
-
-            // 分批插入新动漫数据
-            if (!newAnimeList.isEmpty()) {
-                List<List<AnimeTable>> partitions = CollUtil.split(newAnimeList, BATCH_SIZE);
-                for (List<AnimeTable> partition : partitions) {
-                    newCount += animeTableMapper.insertBatchIgnore(partition);
-                }
+                videoList.add(video);
             }
 
-            // 分批更新已有动漫数据
-            if (!updateAnimeList.isEmpty()) {
-                List<List<AnimeTable>> partitions = CollUtil.split(updateAnimeList, BATCH_SIZE);
-                for (List<AnimeTable> partition : partitions) {
-                    updateCount += animeTableMapper.updateBatchById(partition);
-                }
-            }
-
-            // 分批插入视频数据
+            // 批量插入或更新视频数据
             if (!videoList.isEmpty()) {
-                List<List<Video>> partitions = CollUtil.split(videoList, BATCH_SIZE);
-                for (List<Video> partition : partitions) {
-                    videoCount += videoMapper.insertBatchIgnore(partition);
-                }
+                videoMapper.insertBatchOrUpdate(videoList);
+                log.info("动漫 {} 成功保存 {} 集视频数据", animeId, videoList.size());
             }
 
-            if (newCount > 0 || updateCount > 0 || videoCount > 0) {
-                log.info("批量保存完成 - 新增: {}, 更新: {}, 视频: {}", newCount, updateCount, videoCount);
-            }
+            return videoList.size();
+
         } catch (Exception e) {
-            log.error("批量插入数据异常", e);
+            log.error("解析视频数据失败，animeId: {}", animeId, e);
+            return 0;
         }
     }
 
     /**
-     * 优雅关闭线程池
+     * HTTP GET请求，带重试机制和浏览器伪装
+     *
+     * @param url 请求URL
+     * @return JSON对象
      */
-    @PreDestroy
-    public void shutdown() {
-        log.info("正在关闭爬虫线程池");
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
+    public JSONObject httpGet(String url) {
+        int maxRetries = 3;
+        int retryCount = 0;
+        Exception lastException = null;
+
+        while (retryCount < maxRetries) {
+            try {
+                // 使用HttpRequest模拟浏览器请求
+                String result = HttpRequest.get(url)
+                        .timeout(30000) // 30秒超时
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                        .header("Accept", "application/json, text/plain, */*")
+                        .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+                        .header("Connection", "keep-alive")
+                        .execute()
+                        .body();
+
+                if (null == result || result.isEmpty()) {
+                    throw new BusinessException("返回参数为空");
+                }
+
+                if (!JSONUtil.isTypeJSON(result)) {
+                    log.warn("返回数据不是有效的JSON格式，URL: {}, 前100字符: {}", url,
+                            result.length() > 100 ? result.substring(0, 100) : result);
+                    throw new BusinessException("返回参数异常");
+                }
+
+                JSONObject resultObj = JSONUtil.parseObj(result);
+                if (resultObj.getInt("code") != 1) {
+                    log.warn("API返回错误码: {}, URL: {}", resultObj.getInt("code"), url);
+                    throw new BusinessException("请求错误，错误码: " + resultObj.getInt("code"));
+                }
+
+                // 请求成功，返回结果
+                if (retryCount > 0) {
+                    log.info("URL: {} 在第 {} 次重试后成功", url, retryCount);
+                }
+                return resultObj;
+
+            } catch (cn.hutool.core.io.IORuntimeException e) {
+                // Hutool的IO异常，包含连接失败、超时等网络问题
+                lastException = e;
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    long delay = 1000L * retryCount; // 递增延迟：1s, 2s, 3s
+                    String errorMsg = e.getMessage();
+                    log.warn("网络连接失败，第 {} 次重试: {}, 延迟: {}ms, 错误: {}",
+                            retryCount, url, delay, errorMsg);
+                    try {
+                        Thread.sleep(delay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new BusinessException("请求被中断");
+                    }
+                }
+            } catch (BusinessException e) {
+                // 业务异常不重试，直接抛出
+                throw e;
+            } catch (Exception e) {
+                lastException = e;
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    log.warn("请求异常，第 {} 次重试: {}, 错误: {}", retryCount, url, e.getMessage());
+                    try {
+                        Thread.sleep(1000L * retryCount);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new BusinessException("请求被中断");
+                    }
+                }
             }
-        } catch (InterruptedException e) {
-            executorService.shutdownNow();
-            Thread.currentThread().interrupt();
         }
-        log.info("爬虫线程池已关闭");
+
+        // 所有重试都失败
+        log.error("URL: {} 在 {} 次重试后仍然失败", url, maxRetries);
+        throw new BusinessException("请求失败，已重试" + maxRetries + "次: " + lastException.getMessage());
+    }
+
+    /**
+     * 手动映射API返回的JSON数据到AnimeTable实体
+     *
+     * @param jsonObject API返回的单个动漫详情JSON对象
+     * @return AnimeTable实体对象
+     */
+    public AnimeTable mapJsonToAnimeTable(JSONObject jsonObject) {
+        if (jsonObject == null) {
+            return null;
+        }
+
+        AnimeTable animeTable = new AnimeTable();
+
+        // 基础信息
+        animeTable.setVodId(jsonObject.getInt("vod_id"));
+        animeTable.setVodName(jsonObject.getStr("vod_name"));
+        animeTable.setVodSub(jsonObject.getStr("vod_sub"));
+        animeTable.setVodEn(jsonObject.getStr("vod_enname"));
+        animeTable.setTypeId(jsonObject.getInt("type_id"));
+        animeTable.setTypeName(jsonObject.getStr("type_name"));
+
+        // 分类和标签
+        animeTable.setVodClass(jsonObject.getStr("vod_class"));
+        animeTable.setVodTag(jsonObject.getStr("vod_tag"));
+        animeTable.setVodLetter(jsonObject.getStr("vod_letter"));
+        animeTable.setVodColor(jsonObject.getStr("vod_color"));
+
+        // 图片和媒体
+        animeTable.setVodPic(jsonObject.getStr("vod_pic"));
+
+        // 基本信息
+        animeTable.setVodArea(jsonObject.getStr("vod_area"));
+        animeTable.setVodLang(jsonObject.getStr("vod_lang"));
+        animeTable.setVodYear(jsonObject.getStr("vod_year"));
+        animeTable.setVodRemarks(jsonObject.getStr("vod_remarks"));
+
+        // 人员信息
+        animeTable.setVodActor(jsonObject.getStr("vod_actor"));
+        animeTable.setVodDirector(jsonObject.getStr("vod_director"));
+
+        // 状态信息
+        animeTable.setVodIsend(jsonObject.getInt("vod_isend"));
+        animeTable.setVodLock(jsonObject.getInt("vod_lock"));
+        animeTable.setVodLevel(jsonObject.getInt("vod_level"));
+        animeTable.setVodSerial(jsonObject.getStr("vod_serial"));
+
+        // 统计信息
+        animeTable.setVodHits(jsonObject.getInt("vod_hits"));
+        animeTable.setVodHitsDay(jsonObject.getInt("vod_hits_day"));
+        animeTable.setVodHitsWeek(jsonObject.getInt("vod_hits_week"));
+        animeTable.setVodHitsMonth(jsonObject.getInt("vod_hits_month"));
+        animeTable.setVodUp(jsonObject.getInt("vod_up"));
+        animeTable.setVodDown(jsonObject.getInt("vod_down"));
+
+        // 评分信息
+        animeTable.setVodScore(jsonObject.getBigDecimal("vod_score"));
+        animeTable.setVodScoreAll(jsonObject.getInt("vod_score_all"));
+        animeTable.setVodScoreNum(jsonObject.getInt("vod_score_num"));
+
+        // 时长和积分
+        animeTable.setVodDuration(jsonObject.getStr("vod_duration"));
+        animeTable.setVodPointsPlay(jsonObject.getInt("vod_points_play"));
+        animeTable.setVodPointsDown(jsonObject.getInt("vod_points_down"));
+
+        // 内容简介
+        animeTable.setVodContent(jsonObject.getStr("vod_content"));
+
+        // 播放信息
+        animeTable.setVodPlayFrom(jsonObject.getStr("vod_play_from"));
+        animeTable.setVodPlayNote(jsonObject.getStr("vod_play_note"));
+        animeTable.setVodPlayServer(jsonObject.getStr("vod_play_server"));
+
+        // 下载信息
+        animeTable.setVodDownFrom(jsonObject.getStr("vod_down_from"));
+        animeTable.setVodDownNote(jsonObject.getStr("vod_down_note"));
+        animeTable.setVodDownServer(jsonObject.getStr("vod_down_server"));
+        animeTable.setVodDownUrl(jsonObject.getStr("vod_down_url"));
+
+        // 时间信息 - 将字符串时间转换为Date对象
+        String vodTimeStr = jsonObject.getStr("vod_time");
+        if (vodTimeStr != null && !vodTimeStr.isEmpty()) {
+            try {
+                Date vodTime = DateUtil.parse(vodTimeStr, "yyyy-MM-dd HH:mm:ss");
+                animeTable.setVodTime(vodTime);
+            } catch (Exception e) {
+                log.warn("解析vod_time失败: {}", vodTimeStr, e);
+            }
+        }
+
+        // 设置默认值
+        if (animeTable.getVodStatus() == null) {
+            animeTable.setVodStatus((byte) 1); // 默认状态为已发布
+        }
+
+        return animeTable;
     }
 
 }

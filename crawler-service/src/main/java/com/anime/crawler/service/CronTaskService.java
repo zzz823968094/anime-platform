@@ -261,10 +261,10 @@ public class CronTaskService {
             // 根据任务类型执行对应的爬取方法
             if (task.getId() == -1L) {
                 // 快速同步，直接执行
-                https1080Zyk3CrawlerService.updateVideoListByHour(task.getTaskType(), hour);
+                https1080Zyk3CrawlerService.clawerByHour(task.getTaskType(), hour, 1);
             } else {
                 // 定时任务执行
-                https1080Zyk3CrawlerService.updateVideoListByHour(task.getTaskType(), hour);
+                https1080Zyk3CrawlerService.clawerByHour(task.getTaskType(), hour, 1);
             }
             // 更新日志
             taskLog.setEndTime(new Date());
