@@ -1,6 +1,7 @@
 package com.anime.gateway;
 
 import com.anime.common.utils.JwtUtils;
+import com.anime.gateway.service.SystemUpdateService;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -12,10 +13,15 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import jakarta.annotation.Resource;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
 public class AuthFilter implements GlobalFilter, Ordered {
+
+    @Resource
+    private SystemUpdateService systemUpdateService;
 
     private static final List<String> WHITE_LIST = List.of(
             "/api/danmaku/*",
@@ -36,7 +42,9 @@ public class AuthFilter implements GlobalFilter, Ordered {
             "/api/ad/position/",
             "/api/ad-position/active",
             // 设备统计接口（管理端访问）
-            "/api/anime/device/stats"
+            "/api/anime/device/stats",
+            // 系统管理接口（管理端专用，维护模式下也可访问）
+            "/api/admin/system/"
     );
 
     @Override
@@ -55,6 +63,11 @@ public class AuthFilter implements GlobalFilter, Ordered {
             if (path.startsWith(white)) {
                 return chain.filter(exchange);
             }
+        }
+
+        // 如果系统正在维护，返回 code=999
+        if (systemUpdateService.isUpdating()) {
+            return maintenanceMode(exchange);
         }
 
         // GET 请求的番剧详情、弹幕列表放行
@@ -94,6 +107,21 @@ public class AuthFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         return response.setComplete();
+    }
+
+    /**
+     * 返回维护模式响应（code=999）
+     */
+    private Mono<Void> maintenanceMode(ServerWebExchange exchange) {
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(HttpStatus.OK); // HTTP状态码200，但业务code为999
+        response.getHeaders().add("Content-Type", "application/json;charset=UTF-8");
+        
+        String message = systemUpdateService.getUpdateMessage();
+        String json = "{\"code\":999,\"message\":\"" + message + "\",\"data\":null}";
+        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+        
+        return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
     }
 
     @Override
