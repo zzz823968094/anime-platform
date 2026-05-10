@@ -24,13 +24,11 @@ public class CrawlerController {
 
     @PutMapping("/crawl")
     public Result<?> crawl(@RequestParam("id") Long id) {
-//        if (null == id) {
-//            return Result.fail("参数错误");
-//        }
-//        AnimeTable animeTable = animeTableMapper.selectById(id);
-//        Map<Integer, AnimeTable> existingMap = new HashMap<>();
-//        existingMap.put(animeTable.getVodId(),animeTable);
-//        https1080Zyk3CrawlerService.getDetailAndSave(animeTable.getVodId().toString(), existingMap);
+        if (null == id) {
+            return Result.fail("参数错误");
+        }
+        AnimeTable animeTable = animeTableMapper.selectById(id);
+        https1080Zyk3CrawlerService.clawerOne(animeTable.getVodId().toString());
         return Result.ok();
     }
 

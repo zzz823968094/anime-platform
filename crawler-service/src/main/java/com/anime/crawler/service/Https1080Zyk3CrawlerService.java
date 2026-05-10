@@ -1,6 +1,7 @@
 package com.anime.crawler.service;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
@@ -8,6 +9,7 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.nacos.shaded.com.google.common.base.Joiner;
 import com.anime.common.exception.BusinessException;
 import com.anime.common.utils.IdUtil;
+import com.anime.crawler.config.ProxyConfig;
 import com.anime.crawler.entity.AnimeTable;
 import com.anime.crawler.entity.Video;
 import com.anime.crawler.mapper.AnimeTableMapper;
@@ -16,10 +18,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 1080资源站爬虫服务（优化版）
@@ -41,7 +46,14 @@ public class Https1080Zyk3CrawlerService {
 
     private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
+    private final ProxyConfig proxyConfig;
 
+
+    public void clawerOne(String id) {
+        JSONObject detailResult = httpGet(VIDEO_DETAIL_URL + id);
+        JSONArray detailJsonArray = detailResult.getJSONArray("list");
+        processAnimeData(detailJsonArray);
+    }
     public void clawerByHour(Integer type, Integer hour, Integer page) {
         String url = VIDEO_UPDATE_BY_HOUR + hour + "&t=" + type + "&pg=" + page;
         JSONObject listResult = httpGet(url);
@@ -258,6 +270,7 @@ public class Https1080Zyk3CrawlerService {
 
     /**
      * HTTP GET请求，带重试机制和浏览器伪装
+     * 显式使用ProxyConfig配置的代理
      *
      * @param url 请求URL
      * @return JSON对象
@@ -267,17 +280,26 @@ public class Https1080Zyk3CrawlerService {
         int retryCount = 0;
         Exception lastException = null;
 
+        // 创建代理对象（如果启用）
+        Proxy proxy = createProxy();
+
         while (retryCount < maxRetries) {
             try {
                 // 使用HttpRequest模拟浏览器请求
-                String result = HttpRequest.get(url)
+                HttpRequest httpRequest = HttpRequest.get(url)
                         .timeout(30000) // 30秒超时
                         .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                         .header("Accept", "application/json, text/plain, */*")
                         .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-                        .header("Connection", "keep-alive")
-                        .execute()
-                        .body();
+                        .header("Connection", "keep-alive");
+
+                // 如果启用了代理，显式设置代理
+                if (proxy != Proxy.NO_PROXY) {
+                    httpRequest.setProxy(proxy);
+                    log.debug("使用代理: {}:{}", proxyConfig.getHost(), proxyConfig.getPort());
+                }
+
+                String result = httpRequest.execute().body();
 
                 if (null == result || result.isEmpty()) {
                     throw new BusinessException("返回参数为空");
@@ -301,7 +323,7 @@ public class Https1080Zyk3CrawlerService {
                 }
                 return resultObj;
 
-            } catch (cn.hutool.core.io.IORuntimeException e) {
+            } catch (IORuntimeException e) {
                 // Hutool的IO异常，包含连接失败、超时等网络问题
                 lastException = e;
                 retryCount++;
@@ -338,6 +360,29 @@ public class Https1080Zyk3CrawlerService {
         // 所有重试都失败
         log.error("URL: {} 在 {} 次重试后仍然失败", url, maxRetries);
         throw new BusinessException("请求失败，已重试" + maxRetries + "次: " + lastException.getMessage());
+    }
+
+    /**
+     * 创建代理对象
+     *
+     * @return Proxy对象，如果未启用则返回NO_PROXY
+     */
+    private Proxy createProxy() {
+        if (!proxyConfig.isEnabled()) {
+            return Proxy.NO_PROXY;
+        }
+
+        Proxy.Type proxyType = "socks".equalsIgnoreCase(proxyConfig.getType())
+                ? Proxy.Type.SOCKS
+                : Proxy.Type.HTTP;
+
+        InetSocketAddress address = new InetSocketAddress(proxyConfig.getHost(), proxyConfig.getPort());
+        Proxy proxy = new Proxy(proxyType, address);
+
+        log.info("代理已启用: type={}, host={}, port={}",
+                proxyConfig.getType(), proxyConfig.getHost(), proxyConfig.getPort());
+
+        return proxy;
     }
 
     /**
@@ -436,5 +481,4 @@ public class Https1080Zyk3CrawlerService {
 
         return animeTable;
     }
-
 }
