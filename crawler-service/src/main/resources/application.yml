@@ -14,9 +14,9 @@ logging:
   level:
     com.anime: info
 
-## HTTP代理配置（用于访问被限制的资源站API）
-#proxy:
-#  enabled: true
-#  host: 127.0.0.1
-#  port: 7890
-#  type: http
+# HTTP代理配置（用于访问被限制的资源站API）
+proxy:
+  enabled: true
+  host: 127.0.0.1
+  port: 7890
+  type: http
