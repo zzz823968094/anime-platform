@@ -1,4 +1,4 @@
-package com.anime.user.entity;
+package com.anime.user.service;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

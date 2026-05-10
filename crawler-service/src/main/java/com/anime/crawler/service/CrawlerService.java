@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Deprecated
 public class CrawlerService {
     private static final String BASE_VIDEO_URL = "https://hhzyjiexi.com/play/?url=";
     private static final String CRAWLER_BY_TYPE_URL = "https://hhzyapi.com/api.php/provide/vod/from/hhm3u8/at/json?ac=videolist&t=";

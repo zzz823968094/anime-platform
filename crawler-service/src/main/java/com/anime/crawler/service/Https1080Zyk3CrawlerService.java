@@ -16,6 +16,7 @@ import com.anime.crawler.mapper.AnimeTableMapper;
 import com.anime.crawler.mapper.VideoMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.net.InetSocketAddress;
@@ -48,12 +49,13 @@ public class Https1080Zyk3CrawlerService {
     private final VideoMapper videoMapper;
     private final ProxyConfig proxyConfig;
 
-
+    @Async
     public void clawerOne(String id) {
         JSONObject detailResult = httpGet(VIDEO_DETAIL_URL + id);
         JSONArray detailJsonArray = detailResult.getJSONArray("list");
         processAnimeData(detailJsonArray);
     }
+    @Async
     public void clawerByHour(Integer type, Integer hour, Integer page) {
         String url = VIDEO_UPDATE_BY_HOUR + hour + "&t=" + type + "&pg=" + page;
         JSONObject listResult = httpGet(url);
@@ -64,7 +66,7 @@ public class Https1080Zyk3CrawlerService {
             clawerByHour(type, hour, page + 1);  // 修复：应该递归调用clawerByHour
         }
     }
-
+    @Async
     public void clawerByType(Integer type, Integer page) {
         String url = VIDEO_LIST_URL + "&t=" + type + "&pg=" + page;
         JSONObject listResult = httpGet(url);

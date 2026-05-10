@@ -1,8 +1,10 @@
 package com.anime.user.controller;
 
 import com.anime.common.result.Result;
-import com.anime.user.entity.UserFavorite;
+import com.anime.user.entity.AnimeTable;
 import com.anime.user.mapper.UserFavoriteMapper;
+import com.anime.user.service.AnimeTableService;
+import com.anime.user.service.UserFavorite;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,7 @@ import java.util.List;
 public class FavoriteController {
 
     private final UserFavoriteMapper favoriteMapper;
+    private final AnimeTableService animeTableService;
 
     /** 收藏番剧 */
     @PostMapping("/{animeId}")
@@ -60,7 +63,8 @@ public class FavoriteController {
         );
         List<String> animeIds = new ArrayList<>();
         favs.forEach(item -> animeIds.add(String.valueOf(item.getAnimeId())));
-        return Result.ok(animeIds);
+        List<AnimeTable> animeTables = animeTableService.listByIds(animeIds);
+        return Result.ok(animeTables);
     }
 
     /** 检查是否已收藏 */
