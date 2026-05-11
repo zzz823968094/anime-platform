@@ -24,8 +24,10 @@ import java.net.Proxy;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 1080资源站爬虫服务（优化版）
@@ -45,34 +47,106 @@ public class Https1080Zyk3CrawlerService {
     private static final String VIDEO_DETAIL_URL = "https://api.yzzy-api.com/inc/apijson.php?ac=detail&ids=";
     private static final String VIDEO_UPDATE_BY_HOUR = "https://api.yzzy-api.com/inc/apijson.php?ac=detail&h=";
 
+    // 预编译常用字符串，避免重复创建
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    private static final String ACCEPT_HEADER = "application/json, text/plain, */*";
+    private static final String ACCEPT_LANG_HEADER = "zh-CN,zh;q=0.9,en;q=0.8";
+    private static final String CONNECTION_HEADER = "keep-alive";
+    private static final int HTTP_TIMEOUT = 30000; // 30秒超时
+    private static final int MAX_RETRIES = 3;
+    private static final int BATCH_SIZE = 100;
+
     private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
     private final ProxyConfig proxyConfig;
+    private final com.anime.crawler.service.CrawlerProgressService progressService;
 
-    @Async
+    // 缓存代理对象，避免重复创建
+    private volatile Proxy cachedProxy = null;
+
+    // ThreadLocal存储当前任务的taskKey
+    private static final ThreadLocal<String> currentTaskKey = new ThreadLocal<>();
+
+    @Async("crawlerTaskExecutor")
+    public void clawerOneAsync(String id) {
+        clawerOne(id);
+    }
+
     public void clawerOne(String id) {
         JSONObject detailResult = httpGet(VIDEO_DETAIL_URL + id);
         JSONArray detailJsonArray = detailResult.getJSONArray("list");
         processAnimeData(detailJsonArray);
     }
-    @Async
+
+    @Async("crawlerTaskExecutor")
+    public void clawerByHourAsync(Integer type, Integer hour, Integer page, String taskKey) {
+        currentTaskKey.set(taskKey);
+
+        try {
+            clawerByHour(type, hour, page);
+            progressService.markCompleted(taskKey);
+        } catch (Exception e) {
+            progressService.markFailed(taskKey, e.getMessage());
+            throw e;
+        } finally {
+            currentTaskKey.remove();
+        }
+    }
+
     public void clawerByHour(Integer type, Integer hour, Integer page) {
         String url = VIDEO_UPDATE_BY_HOUR + hour + "&t=" + type + "&pg=" + page;
         JSONObject listResult = httpGet(url);
         Integer pagecount = listResult.getInt("pagecount");
+
+        // 优化：使用StringBuilder减少字符串拼接开销
+        String typeName = getTypeName(type);
+        log.info("{}:拉取{}小时内变动的数据,当前第{}/{}页", typeName, hour, page, pagecount);
+
         JSONArray detailJsonArray = listResult.getJSONArray("list");
+        int itemsInPage = detailJsonArray != null ? detailJsonArray.size() : 0;
+
+        // 处理数据
         processAnimeData(detailJsonArray);
+
+        // 更新进度
+        String taskKey = currentTaskKey.get();
+        if (taskKey != null) {
+            progressService.updatePageProgress(taskKey, page, pagecount, itemsInPage, itemsInPage, 0);
+        }
+
         if (page < pagecount) {
-            clawerByHour(type, hour, page + 1);  // 修复：应该递归调用clawerByHour
+            // 异步递归调用，每一页都提交为独立的异步任务
+            clawerByHour(type, hour, page + 1);
         }
     }
-    @Async
+
+    @Async("crawlerTaskExecutor")
+    public void clawerByTypeAsync(Integer type, Integer page, String taskKey) {
+        currentTaskKey.set(taskKey);
+
+        try {
+            clawerByType(type, page);
+            progressService.markCompleted(taskKey);
+        } catch (Exception e) {
+            progressService.markFailed(taskKey, e.getMessage());
+            throw e;
+        } finally {
+            currentTaskKey.remove();
+        }
+    }
+
     public void clawerByType(Integer type, Integer page) {
         String url = VIDEO_LIST_URL + "&t=" + type + "&pg=" + page;
         JSONObject listResult = httpGet(url);
         Integer pagecount = listResult.getInt("pagecount");
+
+        // 优化：使用StringBuilder减少字符串拼接开销
+        String typeName = getTypeName(type);
+        log.info("{}:根据动漫种类获取所有数据,当前第{}/{}页", typeName, page, pagecount);
+
         JSONArray jsonArray = listResult.getJSONArray("list");
-        List<Integer> ids = new ArrayList<>();
+        // 优化：预先分配ArrayList容量
+        List<Integer> ids = new ArrayList<>(jsonArray.size());
         for (int i = 0; i < jsonArray.size(); i++) {
             JSONObject item = jsonArray.getJSONObject(i);
             Integer vodId = item.getInt("vod_id");
@@ -81,8 +155,19 @@ public class Https1080Zyk3CrawlerService {
         String idsString = Joiner.on(",").join(ids);
         JSONObject detailResult = httpGet(VIDEO_DETAIL_URL + idsString);
         JSONArray detailJsonArray = detailResult.getJSONArray("list");
+        int itemsInPage = detailJsonArray != null ? detailJsonArray.size() : 0;
+
+        // 处理数据
         processAnimeData(detailJsonArray);
+
+        // 更新进度
+        String taskKey = currentTaskKey.get();
+        if (taskKey != null) {
+            progressService.updatePageProgress(taskKey, page, pagecount, itemsInPage, itemsInPage, 0);
+        }
+
         if (page < pagecount) {
+            // 异步递归调用，每一页都提交为独立的异步任务
             clawerByType(type, page + 1);
         }
     }
@@ -112,9 +197,10 @@ public class Https1080Zyk3CrawlerService {
         }
 
         // 第二步：批量查询已存在的动漫（关键优化：避免N+1查询）
-        java.util.Map<Integer, AnimeTable> existingMap = new java.util.HashMap<>();
+        Map<Integer, AnimeTable> existingMap = new HashMap<>((int) (vodIds.size() / 0.75f) + 1);
         if (!vodIds.isEmpty()) {
             List<AnimeTable> existingAnimes = animeTableMapper.selectByVodIds(vodIds);
+            // 优化：预先设置HashMap容量，避免扩容
             for (AnimeTable existing : existingAnimes) {
                 existingMap.put(existing.getVodId(), existing);
             }
@@ -148,8 +234,6 @@ public class Https1080Zyk3CrawlerService {
             if (animeTable.getId() != null && vodPlayUrl != null && !vodPlayUrl.isEmpty()) {
                 Integer count = processVideoData(vodPlayUrl, animeTable.getId());
                 animeTable.setVodTotal(count);
-                log.info("动漫 {} (ID: {}, vodId: {}) 解析到 {} 集视频",
-                        animeTable.getVodName(), animeTable.getId(), vodId, count);
             } else {
                 animeTable.setVodTotal(0);
             }
@@ -171,9 +255,8 @@ public class Https1080Zyk3CrawlerService {
         }
 
         try {
-            int batchSize = 100;
-            for (int i = 0; i < insertList.size(); i += batchSize) {
-                int end = Math.min(i + batchSize, insertList.size());
+            for (int i = 0; i < insertList.size(); i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, insertList.size());
                 List<AnimeTable> batch = insertList.subList(i, end);
                 animeTableMapper.insertBatchIgnore(batch);
             }
@@ -192,9 +275,8 @@ public class Https1080Zyk3CrawlerService {
         }
 
         try {
-            int batchSize = 100;
-            for (int i = 0; i < updateList.size(); i += batchSize) {
-                int end = Math.min(i + batchSize, updateList.size());
+            for (int i = 0; i < updateList.size(); i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, updateList.size());
                 List<AnimeTable> batch = updateList.subList(i, end);
                 animeTableMapper.updateBatchById(batch);
             }
@@ -278,22 +360,21 @@ public class Https1080Zyk3CrawlerService {
      * @return JSON对象
      */
     public JSONObject httpGet(String url) {
-        int maxRetries = 3;
         int retryCount = 0;
         Exception lastException = null;
 
-        // 创建代理对象（如果启用）
-        Proxy proxy = createProxy();
+        // 获取缓存的代理对象
+        Proxy proxy = getProxy();
 
-        while (retryCount < maxRetries) {
+        while (retryCount < MAX_RETRIES) {
             try {
                 // 使用HttpRequest模拟浏览器请求
                 HttpRequest httpRequest = HttpRequest.get(url)
-                        .timeout(30000) // 30秒超时
-                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                        .header("Accept", "application/json, text/plain, */*")
-                        .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-                        .header("Connection", "keep-alive");
+                        .timeout(HTTP_TIMEOUT)
+                        .header("User-Agent", USER_AGENT)
+                        .header("Accept", ACCEPT_HEADER)
+                        .header("Accept-Language", ACCEPT_LANG_HEADER)
+                        .header("Connection", CONNECTION_HEADER);
 
                 // 如果启用了代理，显式设置代理
                 if (proxy != Proxy.NO_PROXY) {
@@ -329,7 +410,7 @@ public class Https1080Zyk3CrawlerService {
                 // Hutool的IO异常，包含连接失败、超时等网络问题
                 lastException = e;
                 retryCount++;
-                if (retryCount < maxRetries) {
+                if (retryCount < MAX_RETRIES) {
                     long delay = 1000L * retryCount; // 递增延迟：1s, 2s, 3s
                     String errorMsg = e.getMessage();
                     log.warn("网络连接失败，第 {} 次重试: {}, 延迟: {}ms, 错误: {}",
@@ -347,7 +428,7 @@ public class Https1080Zyk3CrawlerService {
             } catch (Exception e) {
                 lastException = e;
                 retryCount++;
-                if (retryCount < maxRetries) {
+                if (retryCount < MAX_RETRIES) {
                     log.warn("请求异常，第 {} 次重试: {}, 错误: {}", retryCount, url, e.getMessage());
                     try {
                         Thread.sleep(1000L * retryCount);
@@ -360,8 +441,25 @@ public class Https1080Zyk3CrawlerService {
         }
 
         // 所有重试都失败
-        log.error("URL: {} 在 {} 次重试后仍然失败", url, maxRetries);
-        throw new BusinessException("请求失败，已重试" + maxRetries + "次: " + lastException.getMessage());
+        log.error("URL: {} 在 {} 次重试后仍然失败", url, MAX_RETRIES);
+        throw new BusinessException("请求失败，已重试" + MAX_RETRIES + "次: " + lastException.getMessage());
+    }
+
+    /**
+     * 获取代理对象（带缓存）
+     *
+     * @return Proxy对象，如果未启用则返回NO_PROXY
+     */
+    private Proxy getProxy() {
+        if (cachedProxy != null) {
+            return cachedProxy;
+        }
+        synchronized (this) {
+            if (cachedProxy == null) {
+                cachedProxy = createProxy();
+            }
+        }
+        return cachedProxy;
     }
 
     /**
@@ -379,12 +477,30 @@ public class Https1080Zyk3CrawlerService {
                 : Proxy.Type.HTTP;
 
         InetSocketAddress address = new InetSocketAddress(proxyConfig.getHost(), proxyConfig.getPort());
-        Proxy proxy = new Proxy(proxyType, address);
+        return new Proxy(proxyType, address);
+    }
 
-        log.info("代理已启用: type={}, host={}, port={}",
-                proxyConfig.getType(), proxyConfig.getHost(), proxyConfig.getPort());
-
-        return proxy;
+    /**
+     * 获取类型名称（优化：减少三元运算符嵌套）
+     */
+    private String getTypeName(Integer type) {
+        if (type == null) {
+            return "未知类型";
+        }
+        switch (type) {
+            case 66:
+                return "中国动漫";
+            case 67:
+                return "日本动漫";
+            case 68:
+                return "欧美动漫";
+            case 69:
+                return "港台动漫";
+            case 70:
+                return "海外动漫";
+            default:
+                return "类型" + type;
+        }
     }
 
     /**

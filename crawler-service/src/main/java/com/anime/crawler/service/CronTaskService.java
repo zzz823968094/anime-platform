@@ -32,6 +32,7 @@ public class CronTaskService {
     private final CronTaskMapper taskMapper;
     private final CronTaskLogMapper taskLogMapper;
     private final Https1080Zyk3CrawlerService https1080Zyk3CrawlerService;
+    private final CrawlerProgressService progressService;
 
     private final ThreadPoolTaskScheduler taskScheduler;
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -258,13 +259,18 @@ public class CronTaskService {
         taskLogMapper.insert(taskLog);
 
         try {
+            // 创建进度跟踪并获取taskKey
+            String typeName = progressService.getTypeName(task.getTaskType());
+            String taskKey = progressService.createProgress(task.getTaskType(), 
+                task.getTaskName(), null);
+            
             // 根据任务类型执行对应的爬取方法
             if (task.getId() == -1L) {
-                // 快速同步，直接执行
-                https1080Zyk3CrawlerService.clawerByHour(task.getTaskType(), hour, 1);
+                // 快速同步，使用异步方法
+                https1080Zyk3CrawlerService.clawerByHourAsync(task.getTaskType(), hour, 1, taskKey);
             } else {
-                // 定时任务执行
-                https1080Zyk3CrawlerService.clawerByHour(task.getTaskType(), hour, 1);
+                // 定时任务执行，使用异步方法
+                https1080Zyk3CrawlerService.clawerByHourAsync(task.getTaskType(), hour, 1, taskKey);
             }
             // 更新日志
             taskLog.setEndTime(new Date());
@@ -279,9 +285,7 @@ public class CronTaskService {
                 currentTask.setLastExecuteTime(new Date());
                 taskMapper.updateById(currentTask);
             }
-
-            log.info("[定时任务] 任务执行成功: {}",
-                    task.getTaskName());
+            log.info("[定时任务] 任务执行成功: {}", task.getTaskName());
 
         } catch (Exception e) {
             log.error("[定时任务] 任务执行失败: {}", task.getTaskName(), e);
@@ -310,7 +314,7 @@ public class CronTaskService {
         CronTask tempTask = new CronTask();
         tempTask.setId(-1L);
         tempTask.setTaskType(taskType);
-        String typeName = taskType == 25 ? "日本动漫" : taskType == 26 ? "欧美动漫" : "中国动漫";
+        String typeName = taskType == 67 ? "日本动漫" : taskType == 68 ? "欧美动漫" : "中国动漫";
         tempTask.setTaskName("快速同步-" + typeName);
 
         log.info("[定时任务] 快速同步: {}", tempTask.getTaskName());
