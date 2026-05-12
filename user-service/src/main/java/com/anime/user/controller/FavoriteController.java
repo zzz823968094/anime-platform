@@ -4,7 +4,7 @@ import com.anime.common.result.Result;
 import com.anime.user.entity.AnimeTable;
 import com.anime.user.mapper.UserFavoriteMapper;
 import com.anime.user.service.AnimeTableService;
-import com.anime.user.service.UserFavorite;
+import com.anime.user.entity.UserFavorite;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

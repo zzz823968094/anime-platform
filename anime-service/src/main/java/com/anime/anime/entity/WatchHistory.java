@@ -3,6 +3,8 @@ package com.anime.anime.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -15,21 +17,25 @@ import java.time.LocalDateTime;
 public class WatchHistory {
 
     @TableId(type = IdType.AUTO)
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /**
      * 用户ID
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
 
     /**
      * 番剧ID
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long animeId;
 
     /**
      * 视频ID
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long videoId;
 
     /**
