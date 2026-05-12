@@ -4,6 +4,7 @@ import com.anime.common.result.Result;
 import com.anime.user.entity.User;
 import com.anime.user.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -98,12 +99,25 @@ public class AuthController {
     }
 
     @GetMapping("/api/user/list")
-    public Result<?> list() {
-        List<User> users = userService.list(
-                new LambdaQueryWrapper<User>().orderByDesc(User::getCreatedAt)
-        );
-        users.forEach(u -> u.setPassword(null));
-        return Result.ok(users);
+    public Result<?> list(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) Integer status) {
+        
+        Page<User> userPage = new Page<>(page, size);
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<User>()
+                .like(username != null && !username.isBlank(), User::getUsername, username)
+                .eq(status != null, User::getStatus, status)
+                .orderByDesc(User::getCreatedAt);
+        
+        Page<User> result = userService.page(userPage, queryWrapper);
+        
+        // 清除密码信息
+        result.getRecords().forEach(u -> u.setPassword(null));
+        
+        // 返回分页数据
+        return Result.ok(result);
     }
 
     @GetMapping("/api/user/count")
