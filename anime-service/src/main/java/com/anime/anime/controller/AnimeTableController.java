@@ -7,6 +7,7 @@ import com.anime.anime.entity.dto.DeviceStatsDTO;
 import com.anime.anime.mapper.AnimeTableMapper;
 import com.anime.anime.mapper.SearchLogMapper;
 import com.anime.anime.service.AccessDataService;
+import com.anime.anime.service.AccessUserDetailService;
 import com.anime.anime.service.AnimeTableService;
 import com.anime.anime.service.DeviceStatisticsService;
 import com.anime.common.result.Result;
@@ -29,6 +30,7 @@ public class AnimeTableController {
     private final AnimeTableMapper animeTableMapper;
     private final SearchLogMapper searchLogMapper;
     private final AccessDataService accessDataService;
+    private final AccessUserDetailService accessUserDetailService;
     private final DeviceStatisticsService deviceStatisticsService;
 
     @GetMapping("/list")
@@ -43,11 +45,13 @@ public class AnimeTableController {
             @RequestParam(value = "sort", defaultValue = "latest") String sort,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "sign", required = false) String sign,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestHeader(value = "X-Device-Model", required = false) String deviceModel,
             @RequestHeader(value = "X-OS", required = false) String os) {
         Page<AnimeTable> result = animeService.listAnime(page, size, type, status, year, genre, sort, keyword);
         String ip = getClientIp(request);
         accessDataService.recordAccess(ip, sign);
+        accessUserDetailService.recordUserAccess(userId, ip, sign);
         // 记录设备信息
         if (deviceModel != null && os != null && !deviceModel.isEmpty() && !os.isEmpty()) {
             deviceStatisticsService.recordDevice(ip, deviceModel, os);

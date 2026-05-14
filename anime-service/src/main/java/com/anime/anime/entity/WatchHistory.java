@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("watch_history")
-public class WatchHistory {
+public class WatchHistory implements Serializable {
 
     @TableId(type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)

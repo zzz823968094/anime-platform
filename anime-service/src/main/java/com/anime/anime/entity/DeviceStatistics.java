@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -13,7 +14,7 @@ import java.util.Date;
  */
 @Data
 @TableName("device_statistics")
-public class DeviceStatistics {
+public class DeviceStatistics implements Serializable {
 
     @TableId(type = IdType.AUTO)
     private Integer id;

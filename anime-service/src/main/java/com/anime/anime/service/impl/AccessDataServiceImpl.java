@@ -5,6 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.anime.anime.entity.AccessData;
 import com.anime.anime.mapper.AccessDataMapper;
 import com.anime.anime.service.AccessDataService;
+import com.anime.anime.service.AccessUserDetailService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
 
     private final StringRedisTemplate redisTemplate;
     private final AccessDataMapper accessDataMapper;
+    private final AccessUserDetailService accessUserDetailService;
 
     private static final String REDIS_KEY_PREFIX = "access:";
     private static final String REDIS_KEY_SUFFIX = ":ips";
@@ -38,13 +40,13 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
     private static final String WEB_REDIS_KEY_SUFFIX = ":web:ips";
 
     /**
-     * 记录访问IP到Redis
+     * 记录访问（包含用户ID）
      *
-     * @param ip   客户端IP
-     * @param sign 标识
+     * @param ip     客户端IP
+     * @param sign   访问标识：app/web
      */
     @Override
-    public void recordAccess(String ip, String sign) {
+    public void recordAccess( String ip, String sign) {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             return;
         }
@@ -57,9 +59,9 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
             redisTemplate.opsForSet().add(redisKey, ip);
             // 设置过期时间为3天（防止Redis数据堆积）
             redisTemplate.expire(redisKey, java.time.Duration.ofDays(3));
-            log.debug("记录访问IP: {} -> {}", dateKey, ip);
+            log.debug("记录访问:  ip={}, sign={}", ip, sign);
         } catch (Exception e) {
-            log.error("记录访问IP失败: {}", ip, e);
+            log.error("记录访问失败:  ip={}, sign={}",  ip, sign, e);
         }
     }
 
