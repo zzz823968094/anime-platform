@@ -434,11 +434,11 @@ main() {
     # 6. 验证环境变量
     validate_env
 
-    # 7. 停止旧服务
-    stop_containers
-
-    # 8. 构建项目
+    # 7. 构建项目（在停止服务之前，避免打包失败影响运行中的服务）
     build_project
+
+    # 8. 停止旧服务
+    stop_containers
 
     # 9. 构建Docker镜像
     build_docker_images

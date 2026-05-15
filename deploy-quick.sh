@@ -58,11 +58,15 @@ else
     echo -e "${GREEN}✓ .env 文件已存在${NC}"
 fi
 
-echo -e "${YELLOW}[3/7] 停止旧服务...${NC}"
-docker-compose down
-
-echo -e "${YELLOW}[4/7] 编译项目...${NC}"
+echo -e "${YELLOW}[3/7] 编译项目...${NC}"
 mvn clean package -DskipTests -B
+if [ $? -ne 0 ]; then
+    echo -e "${RED}✗ 项目编译失败，停止部署${NC}"
+    exit 1
+fi
+
+echo -e "${YELLOW}[4/7] 停止旧服务...${NC}"
+docker-compose down
 
 echo -e "${YELLOW}[5/7] 构建Docker镜像...${NC}"
 docker-compose build
