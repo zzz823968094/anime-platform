@@ -3,6 +3,7 @@ package com.anime.admin.service.impl;
 import com.anime.admin.entity.AdminUser;
 import com.anime.admin.mapper.AdminUserMapper;
 import com.anime.admin.service.AdminUserService;
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.enums.UserStatusEnum;
 import com.anime.common.exception.BusinessException;
 import com.anime.common.utils.JwtUtils;
@@ -24,22 +25,22 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
                 new LambdaQueryWrapper<AdminUser>().eq(AdminUser::getAccount, account)
         );
         if (admin == null ||!passwordEncoder.matches(password, admin.getPassword())) {
-            throw new BusinessException(401, "手机号或密码错误");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "手机号或密码错误");
         }
-        if ("DISABLE".equals(admin.getStatus())) {
-            throw new BusinessException(403, "账号已被禁用");
+        if (CommonConstant.USER_STATUS_DISABLED.equals(admin.getStatus())) {
+            throw new BusinessException(CommonConstant.HTTP_STATUS_FORBIDDEN, "账号已被禁用");
         }
         // role=1 表示管理员
-        return JwtUtils.generateToken(admin.getId().longValue(), admin.getName(), 1);
+        return JwtUtils.generateToken(admin.getId().longValue(), admin.getName(), CommonConstant.ADMIN_ROLE_ID);
     }
 
     @Override
     public AdminUser createAdmin(AdminUser adminUser) {
         // 检查手机号是否已存在
         if (phoneExists(adminUser.getPhone())) {
-            throw new BusinessException(400, "手机号已存在");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "手机号已存在");
         }
-        adminUser.setPassword(passwordEncoder.encode("123456"));
+        adminUser.setPassword(passwordEncoder.encode(CommonConstant.DEFAULT_PASSWORD));
         adminUser.setStatus(UserStatusEnum.NORMAL);
         adminUser.setCreateTime(LocalDateTime.now());
         adminUser.setUpdateTime(LocalDateTime.now());
@@ -52,13 +53,13 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
     public AdminUser updateAdmin(Integer id, AdminUser adminUser) {
         AdminUser existing = baseMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(404, "管理员不存在");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_NOT_FOUND, "管理员不存在");
         }
 
         // 如果修改了手机号，检查是否已被使用
         if (adminUser.getPhone() != null && !adminUser.getPhone().equals(existing.getPhone())) {
             if (phoneExists(adminUser.getPhone())) {
-                throw new BusinessException(400, "手机号已存在");
+                throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "手机号已存在");
             }
             existing.setPhone(adminUser.getPhone());
         }
@@ -85,7 +86,7 @@ public class AdminUserServiceImpl extends ServiceImpl<AdminUserMapper, AdminUser
     public void deleteAdmin(Integer id) {
         AdminUser existing = baseMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(404, "管理员不存在");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_NOT_FOUND, "管理员不存在");
         }
         baseMapper.deleteById(id);
     }

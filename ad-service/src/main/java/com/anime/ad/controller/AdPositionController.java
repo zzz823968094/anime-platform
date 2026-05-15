@@ -21,21 +21,21 @@ public class AdPositionController {
 
     @Operation(summary = "获取所有启用的广告位")
     @GetMapping("/active")
-    public Result<List<AdPosition>> getAllActivePositions() {
+    public Result getAllActivePositions() {
         List<AdPosition> positions = adPositionService.getAllActivePositions();
         return Result.ok(positions);
     }
 
     @Operation(summary = "获取所有广告位")
     @GetMapping
-    public Result<List<AdPosition>> getAllPositions() {
+    public Result getAllPositions() {
         List<AdPosition> positions = adPositionService.list();
         return Result.ok(positions);
     }
 
     @Operation(summary = "创建广告位")
     @PostMapping
-    public Result<Boolean> createPosition(@RequestBody AdPositionDTO positionDTO) {
+    public Result createPosition(@RequestBody AdPositionDTO positionDTO) {
         boolean success = adPositionService.createPosition(positionDTO);
         if (success) {
             return Result.ok(true);
@@ -46,7 +46,7 @@ public class AdPositionController {
 
     @Operation(summary = "更新广告位")
     @PutMapping("/{id}")
-    public Result<Boolean> updatePosition(@PathVariable Long id, @RequestBody AdPositionDTO positionDTO) {
+    public Result updatePosition(@PathVariable Long id, @RequestBody AdPositionDTO positionDTO) {
         boolean success = adPositionService.updatePosition(id, positionDTO);
         if (success) {
             return Result.ok(true);
@@ -57,7 +57,7 @@ public class AdPositionController {
 
     @Operation(summary = "删除广告位")
     @DeleteMapping("/{id}")
-    public Result<Boolean> deletePosition(@PathVariable Long id) {
+    public Result deletePosition(@PathVariable Long id) {
         boolean success = adPositionService.deletePosition(id);
         if (success) {
             return Result.ok(true);

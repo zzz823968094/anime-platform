@@ -22,12 +22,7 @@ import org.springframework.stereotype.Service;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 
 /**
  * 1080资源站爬虫服务（优化版）

@@ -20,14 +20,14 @@ public class AdStrategyController {
 
     @Operation(summary = "查询广告的所有策略")
     @GetMapping("/ad/{adId}")
-    public Result<List<AdStrategy>> getStrategiesByAdId(@PathVariable Long adId) {
+    public Result getStrategiesByAdId(@PathVariable Long adId) {
         List<AdStrategy> strategies = adStrategyService.getStrategiesByAdId(adId);
         return Result.ok(strategies);
     }
 
     @Operation(summary = "创建投放策略")
     @PostMapping
-    public Result<Boolean> createStrategy(@RequestBody AdStrategy strategy) {
+    public Result createStrategy(@RequestBody AdStrategy strategy) {
         boolean success = adStrategyService.save(strategy);
         if (success) {
             return Result.ok(true);
@@ -38,7 +38,7 @@ public class AdStrategyController {
 
     @Operation(summary = "更新投放策略")
     @PutMapping("/{id}")
-    public Result<Boolean> updateStrategy(@PathVariable Long id, @RequestBody AdStrategy strategy) {
+    public Result updateStrategy(@PathVariable Long id, @RequestBody AdStrategy strategy) {
         strategy.setId(id);
         boolean success = adStrategyService.updateById(strategy);
         if (success) {
@@ -50,7 +50,7 @@ public class AdStrategyController {
 
     @Operation(summary = "删除投放策略")
     @DeleteMapping("/{id}")
-    public Result<Boolean> deleteStrategy(@PathVariable Long id) {
+    public Result deleteStrategy(@PathVariable Long id) {
         boolean success = adStrategyService.removeById(id);
         if (success) {
             return Result.ok(true);
@@ -61,7 +61,7 @@ public class AdStrategyController {
 
     @Operation(summary = "批量删除广告的策略")
     @DeleteMapping("/ad/{adId}")
-    public Result<Boolean> deleteStrategiesByAdId(@PathVariable Long adId) {
+    public Result deleteStrategiesByAdId(@PathVariable Long adId) {
         boolean success = adStrategyService.remove(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AdStrategy>()
                         .eq(AdStrategy::getAdId, adId)

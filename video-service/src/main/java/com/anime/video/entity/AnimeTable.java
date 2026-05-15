@@ -7,12 +7,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
 @Table(name = "anime_table")
-public class AnimeTable {
+public class AnimeTable implements Serializable {
     @Id
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;                     // 自增主键ID

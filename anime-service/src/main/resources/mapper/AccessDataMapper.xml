@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anime.anime.mapper.AccessDataMapper">
+
+    <!-- 查询最近N天的访问趋势 -->
+    <select id="getAccessTrend" resultType="com.anime.anime.entity.AccessData">
+        SELECT date, app_user_count, web_user_count
+        FROM access_data
+        WHERE date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL #{days} DAY), '%Y%m%d')
+        ORDER BY date
+    </select>
+
+    <!-- 查询总访问人数（所有日期的累加） -->
+    <select id="getTotalUserCount" resultType="java.lang.Long">
+        SELECT SUM(web_user_count + app_user_count) AS total_user_count 
+        FROM access_data
+    </select>
+
+</mapper>

@@ -22,7 +22,7 @@ public class CrawlerProgressController {
      * 查询指定任务的进度
      */
     @GetMapping("/{taskKey}")
-    public Result<?> getProgress(@PathVariable String taskKey) {
+    public Result getProgress(@PathVariable String taskKey) {
         CrawlerProgressInfo progress = progressService.getProgress(taskKey);
         if (progress == null) {
             return Result.fail(404, "任务不存在或已过期");
@@ -34,7 +34,7 @@ public class CrawlerProgressController {
      * 获取最近的任务列表
      */
     @GetMapping("/recent")
-    public Result<?> getRecentProgress(@RequestParam(defaultValue = "10") int limit) {
+    public Result getRecentProgress(@RequestParam(defaultValue = "10") int limit) {
         // 限制最大查询数量
         if (limit > 50) {
             limit = 50;
@@ -46,7 +46,7 @@ public class CrawlerProgressController {
      * 获取指定类型的运行中任务
      */
     @GetMapping("/running/{taskType}")
-    public Result<?> getRunningProgress(@PathVariable Integer taskType) {
+    public Result getRunningProgress(@PathVariable Integer taskType) {
         CrawlerProgressInfo progress = progressService.getRunningProgress(taskType);
         if (progress == null) {
             return Result.ok(null);
@@ -58,7 +58,7 @@ public class CrawlerProgressController {
      * 清理过期的进度记录
      */
     @PostMapping("/clean")
-    public Result<?> cleanExpiredProgress() {
+    public Result cleanExpiredProgress() {
         progressService.cleanExpiredProgress();
         return Result.ok("清理完成");
     }

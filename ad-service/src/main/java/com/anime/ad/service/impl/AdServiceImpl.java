@@ -6,6 +6,7 @@ import com.anime.ad.entity.dto.AdDTO;
 import com.anime.ad.mapper.AdMapper;
 import com.anime.ad.service.AdService;
 import com.anime.ad.service.AdStrategyService;
+import com.anime.common.constant.CommonConstant;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -57,7 +58,7 @@ public class AdServiceImpl extends ServiceImpl<AdMapper, Ad> implements AdServic
         LocalDateTime now = LocalDateTime.now();
         LambdaQueryWrapper<Ad> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Ad::getPositionCode, positionCode)
-               .eq(Ad::getStatus, 1)
+               .eq(Ad::getStatus, CommonConstant.AD_STATUS_ENABLED)
                .le(Ad::getStartTime, now)
                .ge(Ad::getEndTime, now)
                .orderByDesc(Ad::getPriority)

@@ -6,6 +6,7 @@ import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.utils.IdUtil;
 import com.anime.crawler.entity.AnimeTable;
 import com.anime.crawler.entity.Video;
@@ -35,8 +36,6 @@ public class CrawlerService {
     private static final String BASE_VIDEO_URL = "https://hhzyjiexi.com/play/?url=";
     private static final String CRAWLER_BY_TYPE_URL = "https://hhzyapi.com/api.php/provide/vod/from/hhm3u8/at/json?ac=videolist&t=";
     private static final String CRAWLER_BY_IDS_TYPE_URL = "https://hhzyapi.com/api.php/provide/vod/from/hhm3u8/at/json?ac=videolist&ids=";
-    // 批量插入的大小,避免一次性插入过多数据导致内存溢出或数据库连接超时
-    private static final int BATCH_SIZE = 100;
     // 预编译正则表达式,避免重复编译
     private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("\\D+");
 
@@ -44,7 +43,7 @@ public class CrawlerService {
     // 生产环境建议: 根据服务器CPU核心数动态调整,避免过度占用资源影响其他服务
     // 公式: 线程数 = CPU核心数 * (1 + IO等待时间/CPU计算时间)
     // 对于IO密集型任务(如HTTP请求),可以适当增加线程数,但不宜过多
-    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(CommonConstant.CRAWLER_THREAD_POOL_SIZE);
 
     private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
@@ -233,8 +232,8 @@ public class CrawlerService {
         }
 
         // 第三步: 处理数据
-        List<AnimeTable> newAnimeList = new ArrayList<>(BATCH_SIZE);
-        List<AnimeTable> updateAnimeList = new ArrayList<>(BATCH_SIZE);
+        List<AnimeTable> newAnimeList = new ArrayList<>(CommonConstant.CRAWLER_BATCH_SIZE);
+        List<AnimeTable> updateAnimeList = new ArrayList<>(CommonConstant.CRAWLER_BATCH_SIZE);
         List<Video> allVideos = new ArrayList<>();
 
         for (int i = 0; i < list.size(); i++) {
@@ -280,7 +279,7 @@ public class CrawlerService {
                 }
 
                 // 达到批量大小时执行插入
-                if (newAnimeList.size() + updateAnimeList.size() >= BATCH_SIZE) {
+                if (newAnimeList.size() + updateAnimeList.size() >= CommonConstant.CRAWLER_BATCH_SIZE) {
                     insertBatch(newAnimeList, updateAnimeList, allVideos);
                     newAnimeList.clear();
                     updateAnimeList.clear();
@@ -311,7 +310,7 @@ public class CrawlerService {
         try {
             // 分批插入新动漫数据,忽略重复记录
             if (!newAnimeList.isEmpty()) {
-                List<List<AnimeTable>> newPartitions = CollUtil.split(newAnimeList, BATCH_SIZE);
+                List<List<AnimeTable>> newPartitions = CollUtil.split(newAnimeList, CommonConstant.CRAWLER_BATCH_SIZE);
                 for (List<AnimeTable> partition : newPartitions) {
                     animeTableMapper.insertBatchIgnore(partition);
                 }
@@ -320,7 +319,7 @@ public class CrawlerService {
 
             // 分批更新已有动漫数据
             if (!updateAnimeList.isEmpty()) {
-                List<List<AnimeTable>> updatePartitions = CollUtil.split(updateAnimeList, BATCH_SIZE);
+                List<List<AnimeTable>> updatePartitions = CollUtil.split(updateAnimeList, CommonConstant.CRAWLER_BATCH_SIZE);
                 for (List<AnimeTable> partition : updatePartitions) {
                     animeTableMapper.updateBatchById(partition);
                 }
@@ -329,7 +328,7 @@ public class CrawlerService {
 
             if (!videoList.isEmpty()) {
                 // 分批插入视频数据,忽略重复记录
-                List<List<Video>> videoPartitions = CollUtil.split(videoList, BATCH_SIZE);
+                List<List<Video>> videoPartitions = CollUtil.split(videoList, CommonConstant.CRAWLER_BATCH_SIZE);
                 for (List<Video> partition : videoPartitions) {
                     videoMapper.insertBatchIgnore(partition);
                 }
@@ -429,7 +428,7 @@ public class CrawlerService {
             // 将失败的vodId添加到Set中,自动去重
             redisTemplate.opsForSet().add(redisKey, String.valueOf(vodId));
             // 设置过期时间为7天
-            redisTemplate.expire(redisKey, 7, java.util.concurrent.TimeUnit.DAYS);
+            redisTemplate.expire(redisKey, CommonConstant.DEFAULT_ACCESS_STATS_DAYS, java.util.concurrent.TimeUnit.DAYS);
             log.debug("已记录失败的vodId到Redis: key={}, vodId={}", redisKey, vodId);
         } catch (Exception e) {
             log.error("记录失败的vodId到Redis失败", e);

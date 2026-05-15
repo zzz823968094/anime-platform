@@ -19,7 +19,7 @@ public class SystemUpdateController {
      * 获取系统更新状态
      */
     @GetMapping("/update-status")
-    public Result<SystemUpdateService.UpdateStatusInfo> getUpdateStatus() {
+    public Result getUpdateStatus() {
         return Result.ok(systemUpdateService.getStatusInfo());
     }
 
@@ -27,7 +27,7 @@ public class SystemUpdateController {
      * 设置系统更新状态
      */
     @PostMapping("/update-status")
-    public Result<?> setUpdateStatus(@RequestBody UpdateStatusRequest request) {
+    public Result setUpdateStatus(@RequestBody UpdateStatusRequest request) {
         systemUpdateService.setUpdating(request.isUpdating());
         if (request.getMessage() != null && !request.getMessage().isEmpty()) {
             systemUpdateService.setUpdateMessage(request.getMessage());
@@ -39,7 +39,7 @@ public class SystemUpdateController {
      * 快速切换系统更新状态（开启/关闭）
      */
     @PostMapping("/toggle-update")
-    public Result<?> toggleUpdateStatus() {
+    public Result toggleUpdateStatus() {
         boolean newState = systemUpdateService.toggleUpdating();
         return Result.ok("系统更新状态已切换为: " + (newState ? "维护中" : "正常运行"));
     }

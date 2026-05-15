@@ -2,6 +2,7 @@ package com.anime.admin.controller;
 
 import com.anime.admin.entity.AdminUser;
 import com.anime.admin.service.AdminUserService;
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.enums.UserStatusEnum;
 import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -21,7 +22,7 @@ public class AdminUserController {
      * 分页查询管理员列表
      */
     @GetMapping("/list")
-    public Result<?> list(
+    public Result list(
             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
             @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize,
             @RequestParam(value = "name", required = false) String name,
@@ -63,10 +64,10 @@ public class AdminUserController {
      * 获取管理员详情
      */
     @GetMapping("/{id}")
-    public Result<?> getById(@PathVariable("id") Integer id) {
+    public Result getById(@PathVariable("id") Integer id) {
         AdminUser admin = adminUserService.getById(id);
         if (admin == null) {
-            return Result.fail(404, "管理员不存在");
+            return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "管理员不存在");
         }
         admin.setPassword(null);
         return Result.ok(admin);
@@ -76,7 +77,7 @@ public class AdminUserController {
      * 创建管理员
      */
     @PostMapping
-    public Result<?> create(@RequestBody AdminUser adminUser) {
+    public Result create(@RequestBody AdminUser adminUser) {
         AdminUser created = adminUserService.createAdmin(adminUser);
         return Result.ok(created);
     }
@@ -85,7 +86,7 @@ public class AdminUserController {
      * 更新管理员
      */
     @PutMapping("/{id}")
-    public Result<?> update(@PathVariable("id") Integer id, @RequestBody AdminUser adminUser) {
+    public Result update(@PathVariable("id") Integer id, @RequestBody AdminUser adminUser) {
         AdminUser updated = adminUserService.updateAdmin(id, adminUser);
         return Result.ok(updated);
     }
@@ -94,7 +95,7 @@ public class AdminUserController {
      * 删除管理员
      */
     @DeleteMapping("/{id}")
-    public Result<?> delete(@PathVariable("id") Integer id) {
+    public Result delete(@PathVariable("id") Integer id) {
         adminUserService.deleteAdmin(id);
         return Result.ok();
     }
@@ -103,17 +104,17 @@ public class AdminUserController {
      * 启用/禁用管理员
      */
     @PutMapping("/{id}/status")
-    public Result<?> updateStatus(@PathVariable("id") Integer id, @RequestBody java.util.Map<String, String> request) {
+    public Result updateStatus(@PathVariable("id") Integer id, @RequestBody java.util.Map<String, String> request) {
         String statusStr = request.get("status");
         if (statusStr == null || statusStr.isBlank()) {
-            return Result.fail(400, "状态参数不能为空");
+            return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "状态参数不能为空");
         }
         
         UserStatusEnum status;
         try {
             status = UserStatusEnum.valueOf(statusStr);
         } catch (IllegalArgumentException e) {
-            return Result.fail(400, "无效的状态值: " + statusStr);
+            return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "无效的状态值: " + statusStr);
         }
         
         AdminUser update = new AdminUser();

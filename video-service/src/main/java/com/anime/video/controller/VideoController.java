@@ -1,5 +1,6 @@
 package com.anime.video.controller;
 
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.result.Result;
 import com.anime.video.entity.Video;
 import com.anime.video.mapper.AnimeTableMapper;
@@ -23,20 +24,20 @@ public class VideoController {
     private final AnimeTableMapper animeTableMapper;
 
     @GetMapping("/anime/{animeId}")
-    public Result<?> listByAnime(@PathVariable("animeId") Long animeId) {
+    public Result listByAnime(@PathVariable("animeId") Long animeId) {
         List<Video> list = videoMapper.selectList(
                 new LambdaQueryWrapper<Video>()
                         .eq(Video::getAnimeId, animeId)
-                        .eq(Video::getStatus, 1)
+                        .eq(Video::getStatus, CommonConstant.ANIME_STATUS_PUBLISHED)
                         .orderByAsc(Video::getEpisode)
         );
         return Result.ok(list);
     }
 
     @GetMapping("/{videoId}")
-    public Result<?> getVideo(@PathVariable("videoId") Long videoId) {
+    public Result getVideo(@PathVariable("videoId") Long videoId) {
         Video video = videoMapper.selectById(videoId);
-        if (video == null) return Result.fail(404, "视频不存在");
+        if (video == null) return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "视频不存在");
 
         // video 播放量 +1
         video.setViewCount(video.getViewCount()==null? 0:video.getViewCount() + 1);

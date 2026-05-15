@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anime.anime.mapper.SearchLogMapper">
+
+    <!-- 热门搜索词统计（按搜索次数降序） -->
+    <select id="hotKeywords" resultType="java.util.HashMap">
+        SELECT keyword, COUNT(*) as cnt 
+        FROM search_log 
+        GROUP BY keyword 
+        ORDER BY cnt DESC 
+        LIMIT #{limit}
+    </select>
+
+    <!-- 最近N天的搜索趋势（按天统计） -->
+    <select id="searchTrend" resultType="java.util.HashMap">
+        SELECT DATE(created_at) as date, COUNT(*) as cnt 
+        FROM search_log 
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY) 
+        GROUP BY DATE(created_at) 
+        ORDER BY date ASC
+    </select>
+
+</mapper>

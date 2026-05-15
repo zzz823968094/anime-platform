@@ -1,10 +1,10 @@
 package com.anime.gateway.service;
 
+import com.anime.common.constant.CommonConstant;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.Resource;
 
 /**
  * 系统更新状态服务（基于Redis）
@@ -18,23 +18,13 @@ public class SystemUpdateService {
     private StringRedisTemplate stringRedisTemplate;
 
     /**
-     * Redis键名：系统更新状态
-     */
-    private static final String REDIS_KEY_UPDATE_STATUS = "system:update:status";
-
-    /**
-     * Redis键名：更新提示信息
-     */
-    private static final String REDIS_KEY_UPDATE_MESSAGE = "system:update:message";
-
-    /**
      * 获取系统是否处于更新状态
      *
      * @return true-维护中，false-正常运行
      */
     public boolean isUpdating() {
         try {
-            String status = stringRedisTemplate.opsForValue().get(REDIS_KEY_UPDATE_STATUS);
+            String status = stringRedisTemplate.opsForValue().get(CommonConstant.REDIS_KEY_SYSTEM_UPDATE_STATUS);
             return "true".equals(status);
         } catch (Exception e) {
             log.error("获取系统更新状态失败", e);
@@ -50,11 +40,11 @@ public class SystemUpdateService {
      */
     public String getUpdateMessage() {
         try {
-            String message = stringRedisTemplate.opsForValue().get(REDIS_KEY_UPDATE_MESSAGE);
-            return message != null ? message : "系统正在维护升级中，请稍后再试...";
+            String message = stringRedisTemplate.opsForValue().get(CommonConstant.REDIS_KEY_SYSTEM_UPDATE_MESSAGE);
+            return message != null ? message : CommonConstant.SYSTEM_MAINTENANCE_DEFAULT_MESSAGE;
         } catch (Exception e) {
             log.error("获取更新提示信息失败", e);
-            return "系统正在维护升级中，请稍后再试...";
+            return CommonConstant.SYSTEM_MAINTENANCE_DEFAULT_MESSAGE;
         }
     }
 }

@@ -2,11 +2,13 @@ package com.anime.crawler.entity;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * 爬虫任务进度信息DTO
  */
 @Data
-public class CrawlerProgressInfo {
+public class CrawlerProgressInfo implements Serializable {
     
     private String taskKey;
     

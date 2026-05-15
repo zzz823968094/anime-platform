@@ -2,9 +2,9 @@ package com.anime.user.controller;
 
 import com.anime.common.result.Result;
 import com.anime.user.entity.AnimeTable;
+import com.anime.user.entity.UserFavorite;
 import com.anime.user.mapper.UserFavoriteMapper;
 import com.anime.user.service.AnimeTableService;
-import com.anime.user.entity.UserFavorite;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +23,7 @@ public class FavoriteController {
 
     /** 收藏番剧 */
     @PostMapping("/{animeId}")
-    public Result<?> add(@PathVariable("animeId") Long animeId,
+    public Result add(@PathVariable("animeId") Long animeId,
                          @RequestHeader("X-User-Id") Long userId) {
         // 检查是否已收藏
         Long count = favoriteMapper.selectCount(
@@ -43,7 +43,7 @@ public class FavoriteController {
 
     /** 取消收藏 */
     @DeleteMapping("/{animeId}")
-    public Result<?> remove(@PathVariable("animeId") Long animeId,
+    public Result remove(@PathVariable("animeId") Long animeId,
                             @RequestHeader("X-User-Id") Long userId) {
         favoriteMapper.delete(
                 new LambdaQueryWrapper<UserFavorite>()
@@ -55,7 +55,7 @@ public class FavoriteController {
 
     /** 获取收藏列表（返回 animeId 列表） */
     @GetMapping("/list")
-    public Result<?> list(@RequestHeader("X-User-Id") Long userId) {
+    public Result list(@RequestHeader("X-User-Id") Long userId) {
         List<UserFavorite> favs = favoriteMapper.selectList(
                 new LambdaQueryWrapper<UserFavorite>()
                         .eq(UserFavorite::getUserId, userId)
@@ -69,7 +69,7 @@ public class FavoriteController {
 
     /** 检查是否已收藏 */
     @GetMapping("/{animeId}/check")
-    public Result<?> check(@PathVariable("animeId") Long animeId,
+    public Result check(@PathVariable("animeId") Long animeId,
                            @RequestHeader("X-User-Id") Long userId) {
         Long count = favoriteMapper.selectCount(
                 new LambdaQueryWrapper<UserFavorite>()

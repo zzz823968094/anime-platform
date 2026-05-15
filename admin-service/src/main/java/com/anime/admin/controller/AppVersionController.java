@@ -2,6 +2,7 @@ package com.anime.admin.controller;
 
 import com.anime.admin.entity.AppVersion;
 import com.anime.admin.service.AppVersionService;
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -19,7 +20,7 @@ public class AppVersionController {
     private final AppVersionService appVersionService;
 
     @GetMapping("/list")
-    public Result<?> list(
+    public Result list(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String platform,
@@ -35,40 +36,40 @@ public class AppVersionController {
     }
 
     @GetMapping("/latest")
-    public Result<?> latest(@RequestParam(required = false) String platform) {
+    public Result latest(@RequestParam(required = false) String platform) {
         return Result.ok(appVersionService.getLatest(platform));
     }
 
     @GetMapping("/{id}")
-    public Result<?> getById(@PathVariable Integer id) {
+    public Result getById(@PathVariable Integer id) {
         AppVersion v = appVersionService.getById(id);
-        if (v == null) return Result.fail(404, "版本不存在");
+        if (v == null) return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "版本不存在");
         return Result.ok(v);
     }
 
     @PostMapping
-    public Result<?> create(@RequestBody AppVersion appVersion) {
+    public Result create(@RequestBody AppVersion appVersion) {
         return Result.ok(appVersionService.create(appVersion));
     }
 
     @PutMapping("/{id}")
-    public Result<?> update(@PathVariable Integer id, @RequestBody AppVersion appVersion) {
+    public Result update(@PathVariable Integer id, @RequestBody AppVersion appVersion) {
         return Result.ok(appVersionService.update(id, appVersion));
     }
 
     @DeleteMapping("/{id}")
-    public Result<?> delete(@PathVariable Integer id) {
+    public Result delete(@PathVariable Integer id) {
         appVersionService.delete(id);
         return Result.ok();
     }
 
     @PostMapping("/upload")
-    public Result<?> uploadFile(@RequestParam("file") MultipartFile file) {
+    public Result uploadFile(@RequestParam("file") MultipartFile file) {
         try {
             Map<String, Object> result = appVersionService.uploadFile(file);
             return Result.ok(result);
         } catch (Exception e) {
-            return Result.fail(500, "文件上传失败: " + e.getMessage());
+            return Result.fail(CommonConstant.HTTP_STATUS_SERVER_ERROR, "文件上传失败: " + e.getMessage());
         }
     }
 }

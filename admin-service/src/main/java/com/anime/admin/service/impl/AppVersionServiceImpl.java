@@ -3,6 +3,7 @@ package com.anime.admin.service.impl;
 import com.anime.admin.entity.AppVersion;
 import com.anime.admin.mapper.AppVersionMapper;
 import com.anime.admin.service.AppVersionService;
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.exception.BusinessException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -36,7 +37,7 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
     @Override
     public AppVersion create(AppVersion appVersion) {
         if (versionCodeExists(appVersion.getPlatform(), appVersion.getVersionCode())) {
-            throw new BusinessException(400, "该平台版本号已存在");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "该平台版本号已存在");
         }
         appVersion.setStatus("active");
         appVersion.setForceUpdate(appVersion.getForceUpdate() != null && appVersion.getForceUpdate());
@@ -50,12 +51,12 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
     public AppVersion update(Integer id, AppVersion appVersion) {
         AppVersion existing = baseMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(404, "版本不存在");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_NOT_FOUND, "版本不存在");
         }
         if (appVersion.getVersionCode() != null
                 && !appVersion.getVersionCode().equals(existing.getVersionCode())
                 && versionCodeExists(existing.getPlatform(), appVersion.getVersionCode())) {
-            throw new BusinessException(400, "该平台版本号已存在");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "该平台版本号已存在");
         }
         if (appVersion.getVersionCode() != null) existing.setVersionCode(appVersion.getVersionCode());
         if (appVersion.getVersionName() != null) existing.setVersionName(appVersion.getVersionName());
@@ -73,7 +74,7 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
     @Override
     public void delete(Integer id) {
         if (baseMapper.selectById(id) == null) {
-            throw new BusinessException(404, "版本不存在");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_NOT_FOUND, "版本不存在");
         }
         baseMapper.deleteById(id);
     }
@@ -103,18 +104,18 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
         log.info("开始上传文件: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
         
         if (file == null || file.isEmpty()) {
-            throw new BusinessException(400, "文件不能为空");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "文件不能为空");
         }
 
         // 验证文件类型（只允许 APK、IPA 等安装包）
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null) {
-            throw new BusinessException(400, "文件名不能为空");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "文件名不能为空");
         }
         
         String extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
         if (!(extension.equals(".apk") || extension.equals(".ipa") || extension.equals(".exe") || extension.equals(".dmg"))) {
-            throw new BusinessException(400, "只支持上传 .apk, .ipa, .exe, .dmg 格式的文件");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "只支持上传 .apk, .ipa, .exe, .dmg 格式的文件");
         }
 
         // 生成唯一文件名
@@ -146,7 +147,7 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
                     log.error("删除部分文件失败: {}", ex.getMessage());
                 }
             }
-            throw new BusinessException(500, "文件上传失败: " + e.getMessage());
+            throw new BusinessException(CommonConstant.HTTP_STATUS_SERVER_ERROR, "文件上传失败: " + e.getMessage());
         }
 
         // 验证文件是否完整上传
@@ -160,7 +161,7 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
             } catch (IOException e) {
                 log.error("删除不完整文件失败: {}", e.getMessage());
             }
-            throw new BusinessException(500, "文件上传不完整，请重试");
+            throw new BusinessException(CommonConstant.HTTP_STATUS_SERVER_ERROR, "文件上传不完整，请重试");
         }
 
         log.info("文件上传成功: {}", filePath);

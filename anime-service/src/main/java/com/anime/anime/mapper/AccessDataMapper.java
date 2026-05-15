@@ -3,9 +3,6 @@ package com.anime.anime.mapper;
 import com.anime.anime.entity.AccessData;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -21,14 +18,6 @@ public interface AccessDataMapper extends BaseMapper<AccessData> {
      * @param days 天数
      * @return 日期和访问人数列表
      */
-    @Select("SELECT date, app_user_count,web_user_count FROM access_data " +
-            "WHERE date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL #{days} DAY), '%Y%m%d') " +
-            "ORDER BY date ASC")
-    @Results({
-            @Result(property = "date", column = "date"),
-            @Result(property = "appUserCount", column = "app_user_count"),
-            @Result(property = "webUserCount", column = "web_user_count")
-    })
     List<AccessData> getAccessTrend(int days);
 
     /**
@@ -36,6 +25,5 @@ public interface AccessDataMapper extends BaseMapper<AccessData> {
      *
      * @return 总访问记录数
      */
-    @Select("SELECT SUM(web_user_count + app_user_count) AS total_user_count FROM access_data")
     Long getTotalUserCount();
 }

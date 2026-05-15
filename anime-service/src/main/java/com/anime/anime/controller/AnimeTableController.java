@@ -10,6 +10,7 @@ import com.anime.anime.service.AccessDataService;
 import com.anime.anime.service.AccessUserDetailService;
 import com.anime.anime.service.AnimeTableService;
 import com.anime.anime.service.DeviceStatisticsService;
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,7 +35,7 @@ public class AnimeTableController {
     private final DeviceStatisticsService deviceStatisticsService;
 
     @GetMapping("/list")
-    public Result<?> list(
+    public Result list(
             HttpServletRequest request,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
@@ -60,9 +61,9 @@ public class AnimeTableController {
     }
 
     @GetMapping("/{id}")
-    public Result<?> detail(@PathVariable("id") Long id) {
+    public Result detail(@PathVariable("id") Long id) {
         AnimeTable anime = animeService.getById(id);
-        if (anime == null) return Result.fail(404, "番剧不存在");
+        if (anime == null) return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "番剧不存在");
         anime.setVodHits(anime.getVodHits() + 1);
         anime.setVodHitsDay(anime.getVodHitsDay() + 1);
         anime.setVodHitsWeek(anime.getVodHitsWeek() + 1);
@@ -72,26 +73,26 @@ public class AnimeTableController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<?> delete(@PathVariable("id") Long id) {
+    public Result delete(@PathVariable("id") Long id) {
         AnimeTable anime = animeService.getById(id);
-        if (anime == null) return Result.fail(404, "番剧不存在");
-        anime.setVodStatus(0);
+        if (anime == null) return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "番剧不存在");
+        anime.setVodStatus(CommonConstant.ANIME_STATUS_OFFLINE);
         animeService.updateById(anime);
         return Result.ok("已下线");
     }
 
     @PutMapping("/{id}/online")
-    public Result<?> online(
+    public Result online(
             @PathVariable("id") Long id) {
         AnimeTable anime = animeService.getById(id);
-        if (anime == null) return Result.fail(404, "番剧不存在");
-        anime.setVodStatus(1);
+        if (anime == null) return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "番剧不存在");
+        anime.setVodStatus(CommonConstant.ANIME_STATUS_PUBLISHED);
         animeService.updateById(anime);
         return Result.ok("已上线");
     }
 
     @GetMapping("/search")
-    public Result<?> search(
+    public Result search(
             @RequestParam(value = "keyword") String keyword,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "24") int size,
@@ -99,7 +100,7 @@ public class AnimeTableController {
             HttpServletRequest request) {
 
         // 记录搜索日志（关键词不为空且长度合理）
-        if (keyword != null && keyword.trim().length() >= 2) {
+        if (keyword != null && keyword.trim().length() >= CommonConstant.SEARCH_KEYWORD_MIN_LENGTH) {
             try {
                 SearchLog log = new SearchLog();
                 log.setKeyword(keyword.trim());
@@ -119,7 +120,7 @@ public class AnimeTableController {
      * 返回热门关键词和最近7天搜索趋势
      */
     @GetMapping("/search/stats")
-    public Result<?> searchStats(
+    public Result searchStats(
             @RequestParam(value = "limit", defaultValue = "20") int limit,
             @RequestParam(value = "days", defaultValue = "7") int days) {
         Map<String, Object> data = new HashMap<>();
@@ -130,7 +131,7 @@ public class AnimeTableController {
     }
 
     @GetMapping("/recommend/hot")
-    public Result<?> hot(
+    public Result hot(
             @RequestParam(value = "size", defaultValue = "12") int size,
             @RequestParam(value = "limit", defaultValue = "0") int limit) {
         int count = limit > 0 ? limit : size;
@@ -138,7 +139,7 @@ public class AnimeTableController {
     }
 
     @GetMapping("/recommend/latest")
-    public Result<?> latest(
+    public Result latest(
             @RequestParam(value = "size", defaultValue = "12") int size,
             @RequestParam(value = "limit", defaultValue = "0") int limit) {
         int count = limit > 0 ? limit : size;
@@ -154,7 +155,7 @@ public class AnimeTableController {
      * 返回：总番剧数、总播放量、各分类番剧数
      */
     @GetMapping("/stats")
-    public Result<?> stats() {
+    public Result stats() {
         Map<String, Object> data = new HashMap<>();
 
         // 总番剧数（排除已下线）
@@ -169,9 +170,9 @@ public class AnimeTableController {
         data.put("todayView", todayView);
 
         // 各分类番剧数
-        long jpCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "66").count();
-        long usCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "67").count();
-        long cnCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, "68").count();
+        long jpCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, CommonConstant.ANIME_TYPE_JAPAN).count();
+        long usCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, CommonConstant.ANIME_TYPE_US).count();
+        long cnCount = animeService.lambdaQuery().eq(AnimeTable::getTypeId, CommonConstant.ANIME_TYPE_CHINA).count();
         data.put("jpCount", jpCount);
         data.put("usCount", usCount);
         data.put("cnCount", cnCount);
@@ -182,7 +183,7 @@ public class AnimeTableController {
      * 最近搜索记录（管理端）
      */
     @GetMapping("/search/recent")
-    public Result<?> searchRecent(
+    public Result searchRecent(
             @RequestParam(value = "limit", defaultValue = "20") int limit) {
         List<SearchLog> list = searchLogMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SearchLog>()
@@ -197,7 +198,7 @@ public class AnimeTableController {
      * 返回今日UV、最近N天趋势、总访问量
      */
     @GetMapping("/access/stats")
-    public Result<AccessStatsDTO> accessStats(
+    public Result accessStats(
             @RequestParam(value = "days", defaultValue = "7") int days) {
         AccessStatsDTO stats = new AccessStatsDTO();
         Integer todayAppRealTimeUserCount = accessDataService.getTodayAppRealTimeUserCount();
@@ -221,7 +222,7 @@ public class AnimeTableController {
      * 返回指定日期的设备统计数据
      */
     @GetMapping("/device/stats")
-    public Result<DeviceStatsDTO> deviceStats(
+    public Result deviceStats(
             @RequestParam(value = "date", required = false) String date,
             @RequestParam(value = "days", defaultValue = "7") int days) {
         DeviceStatsDTO stats = new DeviceStatsDTO();
@@ -262,9 +263,9 @@ public class AnimeTableController {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip != null && !ip.isBlank()) return ip.split(",")[0].trim();
-        ip = request.getHeader("X-Real-IP");
+        String ip = request.getHeader(CommonConstant.HEADER_X_FORWARDED_FOR);
+        if (ip != null && !ip.isBlank()) return ip.split(CommonConstant.IP_ADDRESS_SEPARATOR)[0].trim();
+        ip = request.getHeader(CommonConstant.HEADER_X_REAL_IP);
         if (ip != null && !ip.isBlank()) return ip;
         return request.getRemoteAddr();
     }

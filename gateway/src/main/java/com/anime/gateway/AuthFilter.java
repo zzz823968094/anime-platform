@@ -1,7 +1,9 @@
 package com.anime.gateway;
 
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.utils.JwtUtils;
 import com.anime.gateway.service.SystemUpdateService;
+import jakarta.annotation.Resource;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -13,7 +15,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import jakarta.annotation.Resource;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -118,7 +119,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
         response.getHeaders().add("Content-Type", "application/json;charset=UTF-8");
         
         String message = systemUpdateService.getUpdateMessage();
-        String json = "{\"code\":999,\"message\":\"" + message + "\",\"data\":null}";
+        String json = "{\"code\":" + CommonConstant.GATEWAY_MAINTENANCE_CODE + ",\"message\":\"" + message + "\",\"data\":null}";
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
         
         return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));

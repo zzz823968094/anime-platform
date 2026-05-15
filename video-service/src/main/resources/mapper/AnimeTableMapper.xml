@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.anime.video.mapper.AnimeTableMapper">
+
+    <!-- 原子自增播放量，避免并发时读取再写入的数据竞争 -->
+    <update id="incrementViewCount">
+        UPDATE anime_table 
+        SET vod_hits = vod_hits + 1,
+            vod_hits_day = vod_hits_day + 1,
+            vod_hits_week = vod_hits_week + 1,
+            vod_hits_month = vod_hits_month + 1 
+        WHERE id = #{animeId}
+    </update>
+
+</mapper>

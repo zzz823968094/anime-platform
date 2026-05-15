@@ -3,6 +3,7 @@ package com.anime.anime.controller;
 import com.anime.anime.entity.WatchHistory;
 import com.anime.anime.entity.dto.WatchHistorySaveRequest;
 import com.anime.anime.service.WatchHistoryService;
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -25,10 +26,10 @@ public class WatchHistoryController {
      * 保存或更新观看历史
      */
     @PostMapping("/save")
-    public Result<?> saveHistory(@RequestBody WatchHistorySaveRequest request,
+    public Result saveHistory(@RequestBody WatchHistorySaveRequest request,
                                  @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
-            return Result.fail(401, "请先登录");
+            return Result.fail(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "请先登录");
         }
         request.setUserId(userId);
         try {
@@ -44,10 +45,10 @@ public class WatchHistoryController {
      * 获取用户的观看历史列表
      */
     @GetMapping("/list")
-    public Result<?> getHistory(@RequestParam(value = "limit", defaultValue = "100") int limit,
+    public Result getHistory(@RequestParam(value = "limit", defaultValue = "100") int limit,
                                 @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
-            return Result.fail(401, "请先登录");
+            return Result.fail(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "请先登录");
         }
 
         List<WatchHistory> historyList = watchHistoryService.getUserHistory(userId, limit);
@@ -58,10 +59,10 @@ public class WatchHistoryController {
      * 删除某条观看历史
      */
     @DeleteMapping("/{animeId}")
-    public Result<?> deleteHistory(@PathVariable("animeId") Long animeId,
+    public Result deleteHistory(@PathVariable("animeId") Long animeId,
                                    @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
-            return Result.fail(401, "请先登录");
+            return Result.fail(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "请先登录");
         }
 
         watchHistoryService.deleteHistory(userId, animeId);
@@ -72,9 +73,9 @@ public class WatchHistoryController {
      * 清空所有观看历史
      */
     @DeleteMapping("/clear")
-    public Result<?> clearHistory(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
+    public Result clearHistory(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
-            return Result.fail(401, "请先登录");
+            return Result.fail(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "请先登录");
         }
 
         watchHistoryService.clearUserHistory(userId);
@@ -85,9 +86,9 @@ public class WatchHistoryController {
      * 统计观看历史数量
      */
     @GetMapping("/count")
-    public Result<?> countHistory(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
+    public Result countHistory(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
-            return Result.fail(401, "请先登录");
+            return Result.fail(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "请先登录");
         }
 
         int count = watchHistoryService.countUserHistory(userId);

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AccessDataController {
     private final AccessDataService accessDataService;
     @RequestMapping("init")
-    public Result<?> initRedisData(){
+    public Result initRedisData(){
         accessDataService.aggregateHourlyAccessData();
         return Result.ok();
     }

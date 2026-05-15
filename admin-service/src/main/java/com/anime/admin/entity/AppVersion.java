@@ -5,11 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @TableName("app_version")
-public class AppVersion {
+public class AppVersion implements Serializable {
     @TableId(type = IdType.AUTO)
     private Integer id;
 

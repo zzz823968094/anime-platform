@@ -1,5 +1,6 @@
 package com.anime.danmaku.controller;
 
+import com.anime.common.constant.CommonConstant;
 import com.anime.common.result.Result;
 import com.anime.danmaku.entity.Danmaku;
 import com.anime.danmaku.mapper.DanmakuMapper;
@@ -21,13 +22,13 @@ public class DanmakuController {
      * GET /api/danmaku/{videoId}
      */
     @GetMapping("/{videoId}")
-    public Result<?> list(
+    public Result list(
             @PathVariable("videoId") Long videoId,
             @RequestParam(value = "limit", defaultValue = "200") int limit) {
         List<Danmaku> list = danmakuMapper.selectList(
                 new LambdaQueryWrapper<Danmaku>()
                         .eq(Danmaku::getVideoId, videoId)
-                        .eq(Danmaku::getStatus, 0)
+                        .eq(Danmaku::getStatus, CommonConstant.ANIME_STATUS_OFFLINE)
                         .orderByAsc(Danmaku::getTimePoint)
                         .last("LIMIT " + limit)
         );

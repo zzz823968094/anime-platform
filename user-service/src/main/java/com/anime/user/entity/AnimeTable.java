@@ -6,18 +6,15 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
-public class AnimeTable {
+public class AnimeTable implements Serializable {
     @Id
-    private Long id;                     // 自增主键ID
-
     @JsonSerialize(using = ToStringSerializer.class)
-    public Long getId() {
-        return id;
-    }
+    private Long id;                     // 自增主键ID
 
     private Integer vodId;                  // 视频ID
 

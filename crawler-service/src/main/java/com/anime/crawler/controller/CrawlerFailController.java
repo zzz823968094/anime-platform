@@ -1,7 +1,5 @@
 package com.anime.crawler.controller;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
 import com.anime.common.result.Result;
 import com.anime.crawler.service.CrawlerService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +22,7 @@ public class CrawlerFailController {
     private final String USA_KEY = "crawler:failed:26";
 
     @GetMapping("/fail")
-    public Result<?> fail() {
+    public Result fail() {
         Map<String, Integer> map = new HashMap<>();
         Set<String> china = redisTemplate.opsForSet().members(CHINA_KEY);
         Set<String> japan = redisTemplate.opsForSet().members(JAPAN_KEY);
@@ -36,7 +34,7 @@ public class CrawlerFailController {
     }
 
     @PutMapping("/fail/restart/{type}")
-    public Result<?> restart(@PathVariable("type") int type) {
+    public Result restart(@PathVariable("type") int type) {
         if (type != 25 && type != 26 && type != 24) {
             return Result.fail("不支持的分类 type，只允许 25/26/24");
         }
@@ -52,7 +50,6 @@ public class CrawlerFailController {
             case 24 -> redisTemplate.delete(CHINA_KEY);
             default -> throw new IllegalStateException("Unexpected value: " + type);
         }
-        ;
         if (appIps == null || appIps.isEmpty()) {
             return Result.fail("暂无数据");
         }
