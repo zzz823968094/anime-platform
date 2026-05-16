@@ -102,6 +102,16 @@ public class CommonConstant {
     // ==================== 状态常量 ====================
 
     /**
+     * 状态：禁用/关闭/否（0）
+     */
+    public static final int ZERO = 0;
+
+    /**
+     * 状态：启用/开启/是（1）
+     */
+    public static final int ONE = 1;
+
+    /**
      * 番剧状态：已发布/正常
      */
     public static final int ANIME_STATUS_PUBLISHED = 1;
@@ -197,12 +207,32 @@ public class CommonConstant {
     // ==================== 用户状态常量 ====================
 
     /**
-     * 用户状态：正常
+     * 用户角色：普通用户
+     */
+    public static final int USER_ROLE_NORMAL = 0;
+
+    /**
+     * 用户角色：管理员
+     */
+    public static final int USER_ROLE_ADMIN = 1;
+
+    /**
+     * 用户状态：正常（Integer类型，用于user表）
+     */
+    public static final int USER_STATUS_NORMAL_INT = 1;
+
+    /**
+     * 用户状态：禁用（Integer类型，用于user表）
+     */
+    public static final int USER_STATUS_DISABLED_INT = 0;
+
+    /**
+     * 用户状态：正常（String类型，用于admin_user表）
      */
     public static final String USER_STATUS_NORMAL = "NORMAL";
 
     /**
-     * 用户状态：禁用
+     * 用户状态：禁用（String类型，用于admin_user表）
      */
     public static final String USER_STATUS_DISABLED = "DISABLE";
 

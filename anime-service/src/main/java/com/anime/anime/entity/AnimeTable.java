@@ -1,57 +1,117 @@
 package com.anime.anime.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Date;
 
+/**
+ * 动漫表实体类
+ * 遵循阿里巴巴开发规范，使用Lombok注解简化代码
+ *
+ * @author anime-platform
+ * @date 2026-05-12
+ */
 @Data
+@TableName("anime_table")
 public class AnimeTable implements Serializable {
-    @Id
+    
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 自增主键ID
+     */
+    @TableId(type = com.baomidou.mybatisplus.annotation.IdType.ASSIGN_ID)
     @JsonSerialize(using = ToStringSerializer.class)
-    private Long id;                     // 自增主键ID
+    private Long id;
 
-    @JsonSerialize(using = ToStringSerializer.class)
-    public Long getId() {
-        return id;
-    }
+    /**
+     * 视频ID
+     */
+    private Integer vodId;
 
-    private Integer vodId;                  // 视频ID
-
+    /**
+     * 主分类ID
+     */
     private Integer typeId;
-    @TableField("type_id_1")// 主分类ID
-    private Integer typeId1;                // 一级分类ID
+    
+    /**
+     * 一级分类ID
+     */
+    @TableField("type_id_1")
+    private Integer typeId1;
 
-    private Integer groupId;                // 分组ID，0表示未分组
+    /**
+     * 分组ID，0表示未分组
+     */
+    private Integer groupId;
 
-    private String vodName;                 // 视频名称/标题
+    /**
+     * 视频名称/标题
+     */
+    private String vodName;
 
-    private String vodSub;                  // 副标题/别名，包含多语言标题
+    /**
+     * 副标题/别名，包含多语言标题
+     */
+    private String vodSub;
 
-    private String vodEn;                   // 英文名或拼音名
+    /**
+     * 英文名或拼音名
+     */
+    private String vodEn;
 
-    private Integer vodStatus;                 // 状态：1-已发布/正常
+    /**
+     * 状态：1-已发布/正常，0-已下线
+     */
+    private Integer vodStatus;
 
-    private String vodLetter;               // 首字母索引，用于字母检索
+    /**
+     * 首字母索引，用于字母检索
+     */
+    private String vodLetter;
 
-    private String vodColor;                // 颜色标记，用于特殊样式
+    /**
+     * 颜色标记，用于特殊样式
+     */
+    private String vodColor;
 
-    private String vodTag;                  // 标签关键词，如：动作,动画,奇幻
+    /**
+     * 标签关键词，如：动作,动画,奇幻
+     */
+    private String vodTag;
 
-    private String vodClass;                // 分类标签，如：动作,动画,奇幻,中国动漫
+    /**
+     * 分类标签，如：动作,动画,奇幻,中国动漫
+     */
+    private String vodClass;
 
-    private String vodPic;                  // 封面图片地址
+    /**
+     * 封面图片地址
+     */
+    private String vodPic;
 
-    private String vodPicThumb;             // 缩略图地址
+    /**
+     * 缩略图地址
+     */
+    private String vodPicThumb;
 
-    private String vodPicSlide;             // 幻灯片/滚动大图地址
+    /**
+     * 幻灯片/滚动大图地址
+     */
+    private String vodPicSlide;
 
-    private String vodPicScreenshot;        // 截图地址
+    /**
+     * 截图地址
+     */
+    private String vodPicScreenshot;
 
     private String vodActor;                // 演员/配音演员列表，多个用逗号分隔
 

@@ -18,12 +18,12 @@ public interface AdminUserService extends IService<AdminUser> {
     /**
      * 更新管理员
      */
-    AdminUser updateAdmin(Integer id, AdminUser adminUser);
+    AdminUser updateAdmin(Long id, AdminUser adminUser);
     
     /**
      * 删除管理员
      */
-    void deleteAdmin(Integer id);
+    void deleteAdmin(Long id);
     
     /**
      * 检查手机号是否存在

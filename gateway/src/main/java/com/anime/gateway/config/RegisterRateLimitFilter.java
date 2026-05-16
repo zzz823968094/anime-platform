@@ -1,5 +1,6 @@
 package com.anime.gateway.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -11,6 +12,14 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
+/**
+ * 注册接口限流过滤器
+ * 遵循阿里巴巴开发规范，防止恶意注册
+ *
+ * @author anime-platform
+ * @date 2026-05-16
+ */
+@Slf4j
 @Component
 public class RegisterRateLimitFilter implements GlobalFilter, Ordered {
 
@@ -39,13 +48,16 @@ public class RegisterRateLimitFilter implements GlobalFilter, Ordered {
                 .flatMap(count -> {
                     if (count == 1) {
                         // 第一次请求，设置 1 分钟过期
+                        log.info("注册限流：首次请求，ip: {}", ip);
                         return redisTemplate.expire(key, Duration.ofMinutes(1))
                                 .then(chain.filter(exchange));
                     }
                     if (count > MAX_PER_MINUTE) {
+                        log.warn("注册限流：超出限制，ip: {}, count: {}", ip, count);
                         exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
                         return exchange.getResponse().setComplete();
                     }
+                    log.debug("注册限流：正常请求，ip: {}, count: {}", ip, count);
                     return chain.filter(exchange);
                 });
     }

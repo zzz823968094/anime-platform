@@ -4,20 +4,18 @@
 
     <!-- 计算留存率 -->
     <select id="getRetentionCount" resultType="java.lang.Long">
-        SELECT COUNT(DISTINCT a.user_id) as retention_count 
+        SELECT COUNT(DISTINCT a.ip) as retention_count
         FROM access_user_detail a 
-        INNER JOIN access_user_detail b ON a.user_id = b.user_id 
+        INNER JOIN access_user_detail b ON a.ip = b.ip
         WHERE a.visit_date = #{baseDate} 
         AND b.visit_date = DATE_FORMAT(DATE_ADD(STR_TO_DATE(#{baseDate}, '%Y%m%d'), INTERVAL #{days} DAY), '%Y%m%d') 
-        AND a.user_id IS NOT NULL
     </select>
 
     <!-- 获取基准日期的活跃用户数 -->
     <select id="getActiveUserCount" resultType="java.lang.Long">
-        SELECT COUNT(DISTINCT user_id) as active_count 
+        SELECT COUNT(DISTINCT ip) as active_count
         FROM access_user_detail 
-        WHERE visit_date = #{baseDate} 
-        AND user_id IS NOT NULL
+        WHERE visit_date = #{baseDate}
     </select>
 
     <!-- 按地理位置统计访问用户数 -->
@@ -26,13 +24,12 @@
             location_country as country, 
             location_province as province, 
             location_city as city, 
-            COUNT(DISTINCT user_id) as userCount, 
-            COUNT(DISTINCT ip) as ipCount 
+            COUNT(DISTINCT ip) as ipCount
         FROM access_user_detail 
         WHERE visit_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL #{days} DAY), '%Y%m%d') 
         AND location_country IS NOT NULL 
         GROUP BY location_country, location_province, location_city 
-        ORDER BY userCount DESC
+        ORDER BY ipCount DESC
     </select>
 
     <!-- 批量查询需要更新地理位置的记录 -->

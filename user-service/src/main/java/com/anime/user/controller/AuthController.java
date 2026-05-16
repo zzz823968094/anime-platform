@@ -1,128 +1,120 @@
 package com.anime.user.controller;
 
 import com.anime.common.constant.CommonConstant;
+import com.anime.common.constant.RedisConstant;
+import com.anime.common.enums.ResultCodeEnum;
 import com.anime.common.result.Result;
-import com.anime.user.entity.User;
+import com.anime.user.entity.dto.UserLoginDTO;
+import com.anime.user.entity.dto.UserRegisterDTO;
+import com.anime.user.entity.vo.LoginVO;
 import com.anime.user.service.UserService;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 认证控制器
+ * 提供用户注册、登录等认证相关接口
+ * 遵循阿里巴巴开发规范，统一参数校验、返回格式、注释规范
+ *
+ * @author anime-platform
+ * @date 2026-05-16
+ */
+@Slf4j
 @RestController
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final UserService userService;
     private final StringRedisTemplate redisTemplate;
 
-    /** 个人信息 */
-    @GetMapping("/api/auth/info")
-    public Result info(@RequestHeader("X-User-Id") Long userId) {
-        return Result.ok(userService.getById(userId));
+    /**
+     * 获取个人信息
+     *
+     * @param userId 用户ID（从请求头获取）
+     * @return 用户信息
+     */
+    @GetMapping("/info")
+    public Result<com.anime.user.entity.vo.UserInfoVO> getInfo(@RequestHeader("X-User-Id") Long userId) {
+        log.info("获取用户信息，userId: {}", userId);
+        com.anime.user.entity.vo.UserInfoVO userInfoVO = userService.getUserInfo(userId);
+        return Result.ok(userInfoVO);
     }
 
-
-    @PostMapping("/api/auth/register")
-    public Result register(@RequestBody Map<String, String> body,
-                              HttpServletRequest request) {
-        String username = body.get("username");
-        String password = body.get("password");
-
-        // ── 参数校验 ──────────────────────────────────────────
-        if (username == null || username.isBlank()) {
-            return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "用户名不能为空");
-        }
-        username = username.trim();
-        if (username.length() < CommonConstant.USERNAME_MIN_LENGTH || username.length() > CommonConstant.USERNAME_MAX_LENGTH) {
-            return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "用户名须为 " + CommonConstant.USERNAME_MIN_LENGTH + "-" + CommonConstant.USERNAME_MAX_LENGTH + " 位");
-        }
-        if (!username.matches(CommonConstant.USERNAME_PATTERN)) {
-            return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "用户名只能包含字母、数字和下划线");
-        }
-        if (password == null || password.length() < CommonConstant.PASSWORD_MIN_LENGTH) {
-            return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "密码至少 " + CommonConstant.PASSWORD_MIN_LENGTH + " 位");
-        }
-        if (password.length() > CommonConstant.PASSWORD_MAX_LENGTH) {
-            return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "密码过长");
-        }
-
-        // ── IP 注册频率限制 ────────────────────────────────────
+    /**
+     * 用户注册
+     * 功能：注册用户并返回Token
+     * 入参：UserRegisterDTO（用户名、密码）
+     * 出参：LoginVO（access_token）
+     *
+     * @param registerDTO 注册请求参数
+     * @param request HTTP请求
+     * @return 注册结果，包含access_token
+     */
+    @PostMapping("/register")
+    public Result<LoginVO> register(@Validated @RequestBody UserRegisterDTO registerDTO,
+                                    HttpServletRequest request) {
         String ip = getClientIp(request);
-        String redisKey = CommonConstant.REDIS_KEY_PREFIX_IP_REGISTER + ip;
+        log.info("用户注册请求，IP: {}, username: {}", ip, registerDTO.getUsername());
+
+        // IP注册频率限制
+        String redisKey = String.format(RedisConstant.IP_REGISTER_COUNT_KEY, ip);
         String countStr = redisTemplate.opsForValue().get(redisKey);
         int count = countStr == null ? 0 : Integer.parseInt(countStr);
 
         if (count >= CommonConstant.MAX_REGISTER_PER_IP_PER_DAY) {
-            return Result.fail(CommonConstant.HTTP_STATUS_TOO_MANY_REQUESTS, "今日注册次数已达上限，请明天再试");
+            log.warn("IP注册次数超限，IP: {}", ip);
+            return Result.fail(ResultCodeEnum.TOO_MANY_REQUESTS);
         }
-        Boolean isExit = userService.userNameIsExit(username);
-        if(isExit){
-            return Result.fail(430, "用户名已存在");
-        }
-        // ── 执行注册 ───────────────────────────────────────────
-        String token = userService.register(username, password);
 
-        // 注册成功，IP 计数 +1，24小时过期
+        // 执行注册
+        String token = userService.register(registerDTO.getUsername(), registerDTO.getPassword());
+
+        // 注册成功，IP计数+1，24小时过期
         if (countStr == null) {
-            redisTemplate.opsForValue().set(redisKey, "1", CommonConstant.HOURS_PER_DAY, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(redisKey, "1", RedisConstant.IP_REGISTER_EXPIRE, TimeUnit.SECONDS);
         } else {
             redisTemplate.opsForValue().increment(redisKey);
         }
 
-        return Result.ok(Map.of("access_token", token));
+        LoginVO loginVO = new LoginVO();
+        loginVO.setAccessToken(token);
+        log.info("用户注册成功，username: {}", registerDTO.getUsername());
+        return Result.ok(loginVO);
     }
 
-    @PostMapping("/api/auth/login")
-    public Result login(@RequestBody Map<String, String> body) {
-        String username = body.get("username");
-        String password = body.get("password");
-
-        if (username == null || username.isBlank()) return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "用户名不能为空");
-        if (password == null || password.isBlank()) return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "密码不能为空");
-
-        String token = userService.login(username.trim(), password);
-        return Result.ok(Map.of("access_token", token));
+    /**
+     * 用户登录
+     * 功能：用户登录并返回Token
+     * 入参：UserLoginDTO（用户名、密码）
+     * 出参：LoginVO（access_token）
+     *
+     * @param loginDTO 登录请求参数
+     * @return 登录结果，包含access_token
+     */
+    @PostMapping("/login")
+    public Result<LoginVO> login(@Validated @RequestBody UserLoginDTO loginDTO) {
+        log.info("用户登录请求，username: {}", loginDTO.getUsername());
+        String token = userService.login(loginDTO.getUsername().trim(), loginDTO.getPassword());
+        LoginVO loginVO = new LoginVO();
+        loginVO.setAccessToken(token);
+        log.info("用户登录成功，username: {}", loginDTO.getUsername());
+        return Result.ok(loginVO);
     }
 
-    @GetMapping("/api/user/me")
-    public Result me(@RequestHeader("X-User-Id") Long userId) {
-        return Result.ok(userService.getById(userId));
-    }
-
-    @GetMapping("/api/user/list")
-    public Result list(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) Integer status) {
-        
-        Page<User> userPage = new Page<>(page, size);
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<User>()
-                .like(username != null && !username.isBlank(), User::getUsername, username)
-                .eq(status != null, User::getStatus, status)
-                .orderByDesc(User::getCreatedAt);
-        
-        Page<User> result = userService.page(userPage, queryWrapper);
-        
-        // 清除密码信息
-        result.getRecords().forEach(u -> u.setPassword(null));
-        
-        // 返回分页数据
-        return Result.ok(result);
-    }
-
-    @GetMapping("/api/user/count")
-    public Result count() {
-        return Result.ok(userService.count());
-    }
-
-    // ── 工具：获取真实客户端 IP ────────────────────────────────
+    /**
+     * 获取真实客户端IP
+     * 遵循阿里巴巴开发规范，优先从代理头中获取真实IP
+     *
+     * @param request HTTP请求
+     * @return 客户端IP地址
+     */
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader(CommonConstant.HEADER_X_FORWARDED_FOR);
         if (ip != null && !ip.isBlank()) {

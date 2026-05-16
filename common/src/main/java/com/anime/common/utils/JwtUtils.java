@@ -3,17 +3,42 @@ package com.anime.common.utils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 
+/**
+ * JWT工具类
+ * 遵循阿里巴巴开发规范，提供统一的Token生成和解析功能
+ *
+ * @author anime-platform
+ * @date 2026-05-12
+ */
+@Slf4j
 public class JwtUtils {
 
-    // 密钥，生产环境建议从配置文件读取
+    /**
+     * 密钥，生产环境建议从配置文件读取
+     */
     private static final String SECRET = "anime-platform-secret-key-2026-very-long";
-    private static final long EXPIRE_MS = 7 * 24 * 3600 * 1000L; // 7天
+    
+    /**
+     * Token过期时间（7天）
+     */
+    private static final long EXPIRE_MS = 7 * 24 * 3600 * 1000L;
 
+    /**
+     * 签名密钥
+     */
     private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
+
+    /**
+     * 私有构造函数，防止实例化
+     */
+    private JwtUtils() {
+        throw new IllegalStateException("Utility class");
+    }
 
     /**
      * 生成 Token
@@ -74,5 +99,36 @@ public class JwtUtils {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * 从Token中获取用户ID（别名方法，兼容拦截器调用）
+     *
+     * @param token JWT Token
+     * @return 用户ID
+     */
+    public static Long getUserIdFromToken(String token) {
+        return getUserId(token);
+    }
+
+    /**
+     * 从Token中获取用户名（别名方法，兼容拦截器调用）
+     *
+     * @param token JWT Token
+     * @return 用户名
+     */
+    public static String getUsernameFromToken(String token) {
+        return getUsername(token);
+    }
+
+    /**
+     * 从Token中获取过期时间
+     *
+     * @param token JWT Token
+     * @return 过期时间戳（毫秒）
+     */
+    public static long getExpirationFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims.getExpiration().getTime();
     }
 }

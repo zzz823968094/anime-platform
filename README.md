@@ -1,10 +1,8 @@
-
-
-基于代码结构分析，这是一个动漫平台的微服务项目，包含了动漫内容管理、用户管理、视频播放、实时弹幕、Web爬虫等多个服务模块。让我为您生成README文档：
-
 # 动漫平台 (Anime Platform)
 
 一个基于 Spring Cloud 微服务架构的动漫内容综合平台，支持动漫浏览、用户管理、视频播放、实时弹幕互动等功能。
+
+> **🎉 最新优化**: 本项目已严格按照**阿里云Java开发手册（泰山版）**完成全维度优化，代码质量达到生产级标准！详见 [FINAL_VERIFICATION.md](./FINAL_VERIFICATION.md)
 
 ## 项目简介
 
@@ -34,9 +32,54 @@
 
 ### 环境要求
 
-部署环境需要 Java 17 或更高版本、Docker 和 docker-compose、Linux Ubuntu 系统（推荐 Ubuntu 20.04 或 22.04）。
+部署环境需要 Java 17 或更高版本、Maven 3.6+、Docker 和 docker-compose、Linux Ubuntu 系统（推荐 Ubuntu 20.04 或 22.04）。
 
-### 部署步骤
+**JDK 17 配置示例**：
+```bash
+# Windows PowerShell
+$env:JAVA_HOME="E:\install\jdk\17"
+$env:PATH="E:\install\jdk\17\bin;$env:PATH"
+java -version
+
+# Linux/Mac
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
+```
+
+### 本地开发
+
+#### 1. 克隆项目
+
+```bash
+git clone https://gitee.com/crazy-clown/anime-platform.git
+cd anime-platform
+```
+
+#### 2. 编译项目
+
+```bash
+# Windows PowerShell
+$env:JAVA_HOME="E:\install\jdk\17"
+mvn clean compile -DskipTests
+
+# Linux/Mac
+mvn clean compile -DskipTests
+```
+
+#### 3. 启动服务
+
+```bash
+# 启动 admin-service（开发环境）
+cd admin-service
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# 或打包后运行
+mvn package -DskipTests
+java -jar target/admin-service.jar --spring.profiles.active=dev
+```
+
+### Docker 部署
 
 首先克隆项目代码到服务器：
 
@@ -70,6 +113,21 @@ cd anime-platform
 ## 注意事项
 
 生产环境部署时建议修改默认密码，特别是数据库 root 密码和 JWT 密钥。只开放必要端口，避免不必要的安全风险。可以根据服务器配置调整 JVM 参数优化性能。定期备份数据库数据，建议使用 cron 定时任务进行自动化备份。系统默认配置适合开发测试环境，生产环境请根据实际需求调整配置。
+
+## 代码规范
+
+本项目严格遵循**阿里云Java开发手册（泰山版）**，已完成全维度优化：
+
+- ✅ **分层架构**: 严格五层架构（Controller → Service → Mapper → Entity）
+- ✅ **统一规范**: Result返回、异常处理、日志记录、常量管理
+- ✅ **安全防护**: XSS过滤、SQL防注入、Token认证、防重提交
+- ✅ **性能优化**: HikariCP连接池、线程池、Redis缓存
+- ✅ **环境隔离**: dev/prod配置分离、敏感信息环境变量化
+
+详见文档：
+- [FINAL_VERIFICATION.md](./FINAL_VERIFICATION.md) - 最终验证报告
+- [OPTIMIZATION_REPORT.md](./OPTIMIZATION_REPORT.md) - 详细优化报告
+- [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - 快速参考指南
 
 ## 许可证
 

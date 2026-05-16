@@ -62,12 +62,11 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
-        <!-- 加到 user-service 的 pom.xml -->
+        <!-- Validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
-
     </dependencies>
 
     <build>

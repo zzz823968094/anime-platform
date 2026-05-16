@@ -7,6 +7,8 @@ import com.anime.ad.mapper.AdMapper;
 import com.anime.ad.service.AdService;
 import com.anime.ad.service.AdStrategyService;
 import com.anime.common.constant.CommonConstant;
+import com.anime.common.exception.BusinessException;
+import com.anime.common.enums.ResultCodeEnum;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -18,8 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * 广告服务实现类
+ * 遵循阿里巴巴开发规范，业务逻辑下沉，事务控制
+ *
+ * @author anime-platform
+ * @date 2026-05-16
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -29,6 +39,9 @@ public class AdServiceImpl extends ServiceImpl<AdMapper, Ad> implements AdServic
 
     @Override
     public Page<Ad> pageAds(Integer current, Integer size, String positionCode, Integer status) {
+        log.info("分页查询广告列表，current: {}, size: {}, positionCode: {}, status: {}", 
+                current, size, positionCode, status);
+        
         Page<Ad> page = new Page<>(current, size);
         LambdaQueryWrapper<Ad> wrapper = new LambdaQueryWrapper<>();
         
@@ -43,7 +56,9 @@ public class AdServiceImpl extends ServiceImpl<AdMapper, Ad> implements AdServic
                .orderByAsc(Ad::getSortOrder)
                .orderByDesc(Ad::getCreateTime);
         
-        return this.page(page, wrapper);
+        Page<Ad> result = this.page(page, wrapper);
+        log.info("分页查询广告列表完成，total: {}", result.getTotal());
+        return result;
     }
 
     @Override
@@ -89,53 +104,87 @@ public class AdServiceImpl extends ServiceImpl<AdMapper, Ad> implements AdServic
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean createAd(AdDTO adDTO) {
+        log.info("开始创建广告，title: {}", adDTO.getTitle());
+        
+        // 业务前置校验
+        if (Objects.isNull(adDTO.getPositionCode()) || adDTO.getPositionCode().isEmpty()) {
+            log.warn("广告位编码不能为空");
+            throw new BusinessException(ResultCodeEnum.PARAM_ERROR.getCode(), "广告位编码不能为空");
+        }
+        
         Ad ad = new Ad();
         BeanUtils.copyProperties(adDTO, ad);
         ad.setClickCount(0L);
         ad.setImpressionCount(0L);
-        ad.setCreateTime(LocalDateTime.now());
-        ad.setUpdateTime(LocalDateTime.now());
-        return this.save(ad);
+        ad.setStatus(CommonConstant.ONE);  // 默认启用
+        
+        boolean result = this.save(ad);
+        log.info("广告创建{}，id: {}", result ? "成功" : "失败", ad.getId());
+        return result;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateAd(Long id, AdDTO adDTO) {
+        log.info("开始更新广告，id: {}", id);
+        
         Ad ad = this.getById(id);
-        if (ad == null) {
+        if (Objects.isNull(ad)) {
             log.warn("广告不存在，id: {}", id);
-            return false;
+            throw new BusinessException(ResultCodeEnum.DATA_NOT_FOUND);
         }
         
         BeanUtils.copyProperties(adDTO, ad);
         ad.setId(id);
-        ad.setUpdateTime(LocalDateTime.now());
-        return this.updateById(ad);
+        
+        boolean result = this.updateById(ad);
+        log.info("广告更新{}，id: {}", result ? "成功" : "失败", id);
+        return result;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteAd(Long id) {
-        return this.removeById(id);
+        log.info("开始删除广告，id: {}", id);
+        
+        Ad ad = this.getById(id);
+        if (Objects.isNull(ad)) {
+            log.warn("广告不存在，id: {}", id);
+            throw new BusinessException(ResultCodeEnum.DATA_NOT_FOUND);
+        }
+        
+        boolean result = this.removeById(id);
+        log.info("广告删除{}，id: {}", result ? "成功" : "失败", id);
+        return result;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void recordImpression(Long adId) {
+        log.debug("记录广告展示，adId: {}", adId);
+        
         Ad ad = this.getById(adId);
-        if (ad != null) {
+        if (Objects.nonNull(ad)) {
             ad.setImpressionCount(ad.getImpressionCount() + 1);
             this.updateById(ad);
+            log.debug("广告展示记录成功，adId: {}, impressionCount: {}", adId, ad.getImpressionCount());
+        } else {
+            log.warn("广告不存在，无法记录展示，adId: {}", adId);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void recordClick(Long adId) {
+        log.debug("记录广告点击，adId: {}", adId);
+        
         Ad ad = this.getById(adId);
-        if (ad != null) {
+        if (Objects.nonNull(ad)) {
             ad.setClickCount(ad.getClickCount() + 1);
             this.updateById(ad);
+            log.debug("广告点击记录成功，adId: {}, clickCount: {}", adId, ad.getClickCount());
+        } else {
+            log.warn("广告不存在，无法记录点击，adId: {}", adId);
         }
     }
 }

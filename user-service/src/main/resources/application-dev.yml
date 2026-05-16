@@ -1,0 +1,86 @@
+# 开发环境配置
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+  
+  # 数据源配置（开发环境）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/anime_platform?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    
+    # HikariCP连接池配置（阿里云推荐参数）
+    hikari:
+      # 最小空闲连接数
+      minimum-idle: 5
+      # 最大连接池大小
+      maximum-pool-size: 20
+      # 连接超时时间（毫秒）
+      connection-timeout: 30000
+      # 空闲连接超时时间（毫秒）
+      idle-timeout: 600000
+      # 连接最大生命周期（毫秒）
+      max-lifetime: 1800000
+      # 连接测试查询
+      connection-test-query: SELECT 1
+  
+  # Redis配置（开发环境）
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          # 最大活跃连接数
+          max-active: 20
+          # 最大空闲连接数
+          max-idle: 10
+          # 最小空闲连接数
+          min-idle: 5
+          # 连接超时时间（毫秒）
+          max-wait: 3000ms
+
+# MyBatis-Plus配置
+mybatis-plus:
+  configuration:
+    # 驼峰命名转换
+    map-underscore-to-camel-case: true
+    # 打印SQL日志（开发环境开启）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath:mapper/*.xml
+  global-config:
+    db-config:
+      # 主键策略：雪花算法
+      id-type: ASSIGN_ID
+      # 逻辑删除字段
+      logic-delete-field: isDeleted
+      # 逻辑删除值
+      logic-delete-value: 1
+      # 逻辑未删除值
+      logic-not-delete-value: 0
+
+# JWT配置
+jwt:
+  # 密钥（开发环境，生产环境应使用环境变量）
+  secret: anime-platform-dev-secret-key-2026
+  # Token过期时间（秒）- 7天
+  expiration: 604800
+  # Token前缀
+  token-prefix: Bearer 
+  # Token请求头名称
+  header: Authorization
+
+# 日志配置（开发环境）
+logging:
+  level:
+    root: INFO
+    com.anime: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"

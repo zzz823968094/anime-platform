@@ -13,7 +13,10 @@ import java.time.LocalDateTime;
 @Data
 @TableName("ad_strategy")
 public class AdStrategy implements Serializable {
-    @TableId(type = IdType.AUTO)
+    /**
+     * 主键ID
+     */
+    @TableId(type = IdType.ASSIGN_ID)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 

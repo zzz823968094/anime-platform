@@ -7,6 +7,8 @@ import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * 高性能分布式ID生成器
  * 特点：
@@ -15,8 +17,19 @@ import java.util.concurrent.locks.ReentrantLock;
  * 3. 支持最多1024个节点
  * 4. 无需依赖数据库/Redis
  * 5. 线程安全，无锁设计
+ *
+ * @author anime-platform
+ * @date 2026-05-12
  */
+@Slf4j
 public class IdUtil {
+
+    /**
+     * 私有构造函数，防止实例化
+     */
+    private IdUtil() {
+        throw new IllegalStateException("Utility class");
+    }
 
     // 时间戳起始点（2024-01-01 00:00:00）
     private static final long START_TIMESTAMP = 1704067200000L;
@@ -196,7 +209,7 @@ public class IdUtil {
      * 性能测试工具
      */
     public static void benchmark(int seconds) {
-        System.out.println("开始性能测试，持续 " + seconds + " 秒...");
+        log.info("开始性能测试，持续 {} 秒...", seconds);
         AtomicLong count = new AtomicLong(0);
         long startTime = System.currentTimeMillis();
         long endTime = startTime + seconds * 1000L;
@@ -227,8 +240,7 @@ public class IdUtil {
         long duration = System.currentTimeMillis() - startTime;
         double qps = totalCount * 1000.0 / duration;
 
-        System.out.printf("测试完成！总计生成 %d 个ID，耗时 %d ms，QPS: %.2f%n",
-                totalCount, duration, qps);
-        System.out.printf("平均每个ID占用: %.2f ns%n", (duration * 1_000_000.0 / totalCount));
+        log.info("测试完成！总计生成 {} 个ID，耗时 {} ms，QPS: {}", totalCount, duration, qps);
+        log.info("平均每个ID占用: {} ns", (duration * 1_000_000.0 / totalCount));
     }
 }

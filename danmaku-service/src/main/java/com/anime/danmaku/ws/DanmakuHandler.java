@@ -3,6 +3,7 @@ package com.anime.danmaku.ws;
 import com.anime.danmaku.entity.Danmaku;
 import com.anime.danmaku.mapper.DanmakuMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,13 +36,12 @@ public class DanmakuHandler extends TextWebSocketHandler {
         log.info("[弹幕] 用户加入房间 video_{}", videoId);
 
         // 推送历史弹幕
-        List<Danmaku> history = danmakuMapper.selectList(
-                new LambdaQueryWrapper<Danmaku>()
-                        .eq(Danmaku::getVideoId, videoId)
-                        .eq(Danmaku::getStatus, 0)
-                        .orderByAsc(Danmaku::getTimePoint)
-                        .last("limit 200")
-        );
+        LambdaQueryWrapper<Danmaku> wrapper = new LambdaQueryWrapper<Danmaku>()
+                .eq(Danmaku::getVideoId, videoId)
+                .eq(Danmaku::getStatus, 0)
+                .orderByAsc(Danmaku::getTimePoint);
+        Page<Danmaku> page = danmakuMapper.selectPage(new Page<>(1, 200), wrapper);
+        List<Danmaku> history = page.getRecords();
         Map<String, Object> historyMsg = new HashMap<>();
         historyMsg.put("type", "history");
         historyMsg.put("data", history);
@@ -63,7 +63,7 @@ public class DanmakuHandler extends TextWebSocketHandler {
             String content = (String) data.get("content");
             if (content == null || content.trim().isEmpty()) return;
 
-            // 存数据库，记录发送时间
+            // 存数据库，记录发送时间（createTime由BaseEntity自动填充）
             Danmaku danmaku = new Danmaku();
             danmaku.setVideoId(videoId);
             danmaku.setContent(content.trim());
@@ -71,7 +71,6 @@ public class DanmakuHandler extends TextWebSocketHandler {
             danmaku.setColor((String) data.getOrDefault("color", "#FFFFFF"));
             danmaku.setDmType(((Number) data.getOrDefault("dmType", 0)).intValue());
             danmaku.setStatus(0);
-            danmaku.setCreatedAt(LocalDateTime.now());
             danmakuMapper.insert(danmaku);
 
             // 广播给其他人（包含 createdAt）
@@ -83,7 +82,7 @@ public class DanmakuHandler extends TextWebSocketHandler {
             broadcast.put("color",     danmaku.getColor());
             broadcast.put("dmType",    danmaku.getDmType());
             broadcast.put("username",  data.getOrDefault("username", "匿名"));
-            broadcast.put("createdAt", danmaku.getCreatedAt().toString());
+            broadcast.put("createdAt", danmaku.getCreateTime() != null ? danmaku.getCreateTime().toString() : LocalDateTime.now().toString());
             String json = objectMapper.writeValueAsString(broadcast);
             connectionManager.broadcast(videoId, json, session);
 

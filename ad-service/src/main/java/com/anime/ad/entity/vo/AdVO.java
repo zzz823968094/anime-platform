@@ -1,0 +1,122 @@
+package com.anime.ad.entity.vo;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import lombok.Data;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+/**
+ * 广告视图对象
+ * 用于前端展示，不包含敏感信息
+ *
+ * @author anime-platform
+ * @date 2026-05-16
+ */
+@Data
+public class AdVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 主键ID
+     */
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long id;
+
+    /**
+     * 广告位编码
+     */
+    private String positionCode;
+
+    /**
+     * 广告标题
+     */
+    private String title;
+
+    /**
+     * 广告副标题
+     */
+    private String subtitle;
+
+    /**
+     * 广告图片URL
+     */
+    private String imageUrl;
+
+    /**
+     * 广告视频URL
+     */
+    private String videoUrl;
+
+    /**
+     * HTML内容
+     */
+    private String htmlContent;
+
+    /**
+     * 链接类型
+     */
+    private String linkType;
+
+    /**
+     * 链接值
+     */
+    private String linkValue;
+
+    /**
+     * 开始时间
+     */
+    private LocalDateTime startTime;
+
+    /**
+     * 结束时间
+     */
+    private LocalDateTime endTime;
+
+    /**
+     * 目标类型
+     */
+    private String targetType;
+
+    /**
+     * 优先级
+     */
+    private Integer priority;
+
+    /**
+     * 点击次数
+     */
+    private Long clickCount;
+
+    /**
+     * 展示次数
+     */
+    private Long impressionCount;
+
+    /**
+     * 状态（0-禁用 1-启用）
+     */
+    private Integer status;
+
+    /**
+     * 排序号
+     */
+    private Integer sortOrder;
+
+    /**
+     * 扩展数据
+     */
+    private String extraData;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updateTime;
+}

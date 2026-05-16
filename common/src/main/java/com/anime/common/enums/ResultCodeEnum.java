@@ -50,7 +50,62 @@ public enum ResultCodeEnum {
     /**
      * 请求过于频繁
      */
-    TOO_MANY_REQUESTS(429, "请求过于频繁，请稍后重试");
+    TOO_MANY_REQUESTS(429, "请求过于频繁，请稍后重试"),
+
+    /**
+     * 数据不存在
+     */
+    DATA_NOT_FOUND(404, "数据不存在"),
+
+    /**
+     * 业务逻辑错误
+     */
+    BUSINESS_ERROR(501, "业务逻辑错误"),
+
+    /**
+     * 数据已存在
+     */
+    DATA_EXISTS(409, "数据已存在"),
+
+    /**
+     * 操作失败
+     */
+    OPERATION_FAILED(500, "操作失败"),
+
+    /**
+     * 参数缺失
+     */
+    PARAM_MISSING(400, "参数缺失"),
+
+    /**
+     * 参数格式错误
+     */
+    PARAM_FORMAT_ERROR(400, "参数格式错误"),
+
+    /**
+     * Token过期
+     */
+    TOKEN_EXPIRED(401, "Token已过期，请重新登录"),
+
+    /**
+     * Token无效
+     */
+    TOKEN_INVALID(401, "Token无效"),
+
+    /**
+     * 权限不足
+     */
+    PERMISSION_DENIED(403, "权限不足，无法执行此操作"),
+
+    /**
+     * 请求超时
+     */
+    REQUEST_TIMEOUT(408, "请求超时，请稍后重试"),
+
+    /**
+     * 服务不可用
+     */
+    SERVICE_UNAVAILABLE(503, "服务暂时不可用，请稍后重试");
 
     /**
      * 状态码

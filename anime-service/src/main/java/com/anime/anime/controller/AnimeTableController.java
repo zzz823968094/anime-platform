@@ -4,6 +4,7 @@ import com.anime.anime.entity.AnimeTable;
 import com.anime.anime.entity.SearchLog;
 import com.anime.anime.entity.dto.AccessStatsDTO;
 import com.anime.anime.entity.dto.DeviceStatsDTO;
+import com.anime.anime.entity.query.AnimeListQuery;
 import com.anime.anime.mapper.AnimeTableMapper;
 import com.anime.anime.mapper.SearchLogMapper;
 import com.anime.anime.service.AccessDataService;
@@ -15,6 +16,7 @@ import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -22,6 +24,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 动漫表控制器
+ * 遵循阿里巴巴开发规范，提供统一的RESTful API接口
+ *
+ * @author anime-platform
+ * @date 2026-05-12
+ */
+@Slf4j
 @RestController
 @RequestMapping("/api/anime")
 @RequiredArgsConstructor
@@ -34,50 +44,86 @@ public class AnimeTableController {
     private final AccessUserDetailService accessUserDetailService;
     private final DeviceStatisticsService deviceStatisticsService;
 
+    /**
+     * 分页查询动漫列表
+     *
+     * @param query 查询参数
+     * @param request HTTP请求
+     * @return 分页结果
+     */
     @GetMapping("/list")
-    public Result list(
-            HttpServletRequest request,
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "20") int size,
-            @RequestParam(value = "type", required = false) String type,
-            @RequestParam(value = "status", required = false) Integer status,
-            @RequestParam(value = "year", required = false) Integer year,
-            @RequestParam(value = "genre", required = false) String genre,
-            @RequestParam(value = "sort", defaultValue = "latest") String sort,
-            @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "sign", required = false) String sign,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @RequestHeader(value = "X-Device-Model", required = false) String deviceModel,
-            @RequestHeader(value = "X-OS", required = false) String os) {
-        Page<AnimeTable> result = animeService.listAnime(page, size, type, status, year, genre, sort, keyword);
+    public Result<Page<AnimeTable>> list(AnimeListQuery query, HttpServletRequest request) {
+        log.info("分页查询动漫列表，pageNum: {}, pageSize: {}, sort: {}", query.getPageNum(), query.getPageSize(), query.getSort());
+        
+        Page<AnimeTable> result = animeService.listAnime(
+                query.getPageNum(),
+                query.getPageSize(),
+                query.getType(),
+                query.getStatus(),
+                query.getYear(),
+                query.getGenre(),
+                query.getSort(),
+                query.getKeyword()
+        );
+        
+        // 记录访问数据
         String ip = getClientIp(request);
-        accessDataService.recordAccess(ip, sign);
-        accessUserDetailService.recordUserAccess(userId, ip, sign);
+        accessDataService.recordAccess(ip, request.getParameter("sign"));
+        
+        // 记录用户访问详情（userId可能为空）
+        String userIdHeader = request.getHeader("X-User-Id");
+        if (userIdHeader != null && !userIdHeader.isEmpty()) {
+            try {
+                Long userId = Long.valueOf(userIdHeader);
+                accessUserDetailService.recordUserAccess(userId, ip, request.getParameter("sign"));
+            } catch (NumberFormatException e) {
+                log.warn("用户ID格式错误: {}", userIdHeader);
+            }
+        }
+        
         // 记录设备信息
+        String deviceModel = request.getHeader("X-Device-Model");
+        String os = request.getHeader("X-OS");
         if (deviceModel != null && os != null && !deviceModel.isEmpty() && !os.isEmpty()) {
             deviceStatisticsService.recordDevice(ip, deviceModel, os);
         }
+        
+        log.info("分页查询动漫列表完成，total: {}", result.getTotal());
         return Result.ok(result);
     }
 
     @GetMapping("/{id}")
     public Result detail(@PathVariable("id") Long id) {
+        log.info("获取动漫详情，id: {}", id);
         AnimeTable anime = animeService.getById(id);
-        if (anime == null) return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "番剧不存在");
+        if (anime == null) {
+            log.warn("动漫不存在，id: {}", id);
+            return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "番剧不存在");
+        }
+        
+        // 更新点击量
         anime.setVodHits(anime.getVodHits() + 1);
         anime.setVodHitsDay(anime.getVodHitsDay() + 1);
         anime.setVodHitsWeek(anime.getVodHitsWeek() + 1);
         anime.setVodHitsMonth(anime.getVodHitsMonth() + 1);
         animeService.updateById(anime);
+        
+        log.debug("动漫点击量更新成功，id: {}, hits: {}", id, anime.getVodHits());
         return Result.ok(anime);
     }
 
     @DeleteMapping("/{id}")
     public Result delete(@PathVariable("id") Long id) {
+        log.info("下线动漫，id: {}", id);
         AnimeTable anime = animeService.getById(id);
-        if (anime == null) return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "番剧不存在");
+        if (anime == null) {
+            log.warn("动漫不存在，id: {}", id);
+            return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "番剧不存在");
+        }
+        
         anime.setVodStatus(CommonConstant.ANIME_STATUS_OFFLINE);
         animeService.updateById(anime);
+        log.info("动漫已下线，id: {}", id);
         return Result.ok("已下线");
     }
 
@@ -139,13 +185,11 @@ public class AnimeTableController {
     }
 
     @GetMapping("/recommend/latest")
-    public Result latest(
-            @RequestParam(value = "size", defaultValue = "12") int size,
-            @RequestParam(value = "limit", defaultValue = "0") int limit) {
-        int count = limit > 0 ? limit : size;
+    public Result<List<AnimeTable>> latest(
+            @RequestParam(value = "size", defaultValue = "12") int size) {
         List<AnimeTable> list = animeService.lambdaQuery()
                 .orderByDesc(AnimeTable::getUpdateAt)
-                .last("limit " + count)
+                .last("limit " + size)
                 .list();
         return Result.ok(list);
     }

@@ -2,14 +2,24 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.anime.user.mapper.AnimeTableMapper">
 
-    <!-- 统计总播放量(使用MySQL SUM函数) -->
+    <!--
+        统计总播放量
+        使用MySQL SUM函数计算所有动漫的总播放次数
+        @return 总播放量
+    -->
     <select id="sumTotalViewCount" resultType="java.lang.Long">
-        SELECT COALESCE(SUM(vod_hits), 0) FROM anime_table
+        SELECT COALESCE(SUM(vod_hits), 0)
+        FROM anime_table
     </select>
 
-    <!-- 统计今日播放量(使用MySQL SUM函数) -->
+    <!--
+        统计今日播放量
+        使用MySQL SUM函数计算所有动漫的今日播放次数
+        @return 今日播放量
+    -->
     <select id="sumTodayViewCount" resultType="java.lang.Long">
-        SELECT COALESCE(SUM(vod_hits_day), 0) FROM anime_table
+        SELECT COALESCE(SUM(vod_hits_day), 0)
+        FROM anime_table
     </select>
 
 </mapper>

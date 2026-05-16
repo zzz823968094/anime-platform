@@ -4,6 +4,7 @@ import com.anime.common.constant.CommonConstant;
 import com.anime.common.utils.JwtUtils;
 import com.anime.gateway.service.SystemUpdateService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -18,6 +19,14 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * 认证过滤器
+ * 遵循阿里巴巴开发规范，统一JWT验证、维护模式检查
+ *
+ * @author anime-platform
+ * @date 2026-05-16
+ */
+@Slf4j
 @Component
 public class AuthFilter implements GlobalFilter, Ordered {
 
@@ -56,18 +65,21 @@ public class AuthFilter implements GlobalFilter, Ordered {
 
         // OPTIONS 预检请求直接放行（CORS）
         if ("OPTIONS".equals(method)) {
+            log.debug("OPTIONS预检请求，直接放行，path: {}", path);
             return chain.filter(exchange);
         }
 
         // 白名单直接放行
         for (String white : WHITE_LIST) {
             if (path.startsWith(white)) {
+                log.debug("白名单路径，直接放行，path: {}", path);
                 return chain.filter(exchange);
             }
         }
 
         // 如果系统正在维护，返回 code=999
         if (systemUpdateService.isUpdating()) {
+            log.warn("系统维护模式，拦截请求，path: {}", path);
             return maintenanceMode(exchange);
         }
 
@@ -77,6 +89,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
                         path.startsWith("/api/danmaku/") ||
                         path.startsWith("/api/video/") ||
                         path.startsWith("/ws/"))) {
+            log.debug("GET请求公开资源，直接放行，path: {}", path);
             return chain.filter(exchange);
         }
 
@@ -85,17 +98,20 @@ public class AuthFilter implements GlobalFilter, Ordered {
         if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
             token = token.substring(7);
         } else {
+            log.warn("缺少Token，拒绝访问，path: {}", path);
             return unauthorized(exchange);
         }
 
         // 验证 Token
         boolean valid = JwtUtils.isValid(token);
         if (!valid) {
+            log.warn("Token无效，拒绝访问，path: {}", path);
             return unauthorized(exchange);
         }
 
         // 解析用户信息，写入请求头传给下游
         Long userId = JwtUtils.getUserId(token);
+        log.debug("Token验证成功，userId: {}, path: {}", userId, path);
 
         ServerHttpRequest mutatedRequest = request.mutate()
                 .header("X-User-Id", userId.toString())
