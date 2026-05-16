@@ -16,6 +16,7 @@ import com.anime.crawler.mapper.AnimeTableMapper;
 import com.anime.crawler.mapper.VideoMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -38,9 +39,14 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class Https1080Zyk3CrawlerService {
-    private static final String VIDEO_LIST_URL = "https://api.yzzy-api.com/inc/apijson.php?ac=list";
-    private static final String VIDEO_DETAIL_URL = "https://api.yzzy-api.com/inc/apijson.php?ac=detail&ids=";
-    private static final String VIDEO_UPDATE_BY_HOUR = "https://api.yzzy-api.com/inc/apijson.php?ac=detail&h=";
+    @Value("${crawler.video-list-url:https://api.yyzy-tv.vip/inc/apijson.php?ac=list}")
+    private String videoListUrl;
+    
+    @Value("${crawler.video-detail-url:https://api.yyzy-tv.vip/inc/apijson.php?ac=detail&ids=}")
+    private String videoDetailUrl;
+    
+    @Value("${crawler.video-update-by-hour:https://api.yyzy-tv.vip/inc/apijson.php?ac=detail&h=}")
+    private String videoUpdateByHour;
 
     // 预编译常用字符串，避免重复创建
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -68,7 +74,7 @@ public class Https1080Zyk3CrawlerService {
     }
 
     public void clawerOne(String id) {
-        JSONObject detailResult = httpGet(VIDEO_DETAIL_URL + id);
+        JSONObject detailResult = httpGet(videoDetailUrl + id);
         JSONArray detailJsonArray = detailResult.getJSONArray("list");
         processAnimeData(detailJsonArray);
     }
@@ -89,14 +95,13 @@ public class Https1080Zyk3CrawlerService {
     }
 
     public void clawerByHour(Integer type, Integer hour, Integer page) {
-        String url = VIDEO_UPDATE_BY_HOUR + hour + "&t=" + type + "&pg=" + page;
+        String url = videoUpdateByHour + hour + "&t=" + type + "&pg=" + page;
         JSONObject listResult = httpGet(url);
         Integer pagecount = listResult.getInt("pagecount");
 
         // 优化：使用StringBuilder减少字符串拼接开销
         String typeName = getTypeName(type);
         log.info("{}:拉取{}小时内变动的数据,当前第{}/{}页", typeName, hour, page, pagecount);
-
         JSONArray detailJsonArray = listResult.getJSONArray("list");
         int itemsInPage = detailJsonArray != null ? detailJsonArray.size() : 0;
 
@@ -131,7 +136,7 @@ public class Https1080Zyk3CrawlerService {
     }
 
     public void clawerByType(Integer type, Integer page) {
-        String url = VIDEO_LIST_URL + "&t=" + type + "&pg=" + page;
+        String url = videoListUrl + "&t=" + type + "&pg=" + page;
         JSONObject listResult = httpGet(url);
         Integer pagecount = listResult.getInt("pagecount");
 
@@ -148,7 +153,7 @@ public class Https1080Zyk3CrawlerService {
             ids.add(vodId);
         }
         String idsString = Joiner.on(",").join(ids);
-        JSONObject detailResult = httpGet(VIDEO_DETAIL_URL + idsString);
+        JSONObject detailResult = httpGet(videoDetailUrl + idsString);
         JSONArray detailJsonArray = detailResult.getJSONArray("list");
         int itemsInPage = detailJsonArray != null ? detailJsonArray.size() : 0;
 
@@ -329,7 +334,6 @@ public class Https1080Zyk3CrawlerService {
                 video.setViewCount(0);
                 video.setCreatedAt(LocalDateTime.now());
                 video.setUpdatedAt(LocalDateTime.now());
-
                 videoList.add(video);
             }
 

@@ -14,3 +14,5 @@ spring:
         shared-configs:
           - data-id: mysql-redis.yml
             refresh: true
+          - data-id: crawler-request-url.yml
+            refresh: true
