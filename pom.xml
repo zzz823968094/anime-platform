@@ -157,10 +157,6 @@
             <version>3.5.7</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>com.anime</groupId>
-            <artifactId>common</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
