@@ -15,6 +15,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,7 +56,7 @@ public class AuthController {
      * 出参：LoginVO（access_token）
      *
      * @param registerDTO 注册请求参数
-     * @param request HTTP请求
+     * @param request     HTTP请求
      * @return 注册结果，包含access_token
      */
     @PostMapping("/register")
@@ -99,13 +101,15 @@ public class AuthController {
      * @return 登录结果，包含access_token
      */
     @PostMapping("/login")
-    public Result<LoginVO> login(@Validated @RequestBody UserLoginDTO loginDTO) {
+    public Result<Map<String, String>> login(@Validated @RequestBody UserLoginDTO loginDTO) {
         log.info("用户登录请求，username: {}", loginDTO.getUsername());
         String token = userService.login(loginDTO.getUsername().trim(), loginDTO.getPassword());
-        LoginVO loginVO = new LoginVO();
-        loginVO.setAccessToken(token);
+//        LoginVO loginVO = new LoginVO();
+//        loginVO.setAccessToken(token);
+        Map<String, String> map = new HashMap<>();
+        map.put("access_token", token);
         log.info("用户登录成功，username: {}", loginDTO.getUsername());
-        return Result.ok(loginVO);
+        return Result.ok(map);
     }
 
     /**
