@@ -13,11 +13,15 @@
 
     <!-- 最近N天的搜索趋势（按天统计） -->
     <select id="searchTrend" resultType="java.util.HashMap">
-        SELECT DATE(created_at) as date, COUNT(*) as cnt 
-        FROM search_log 
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY) 
-        GROUP BY DATE(created_at) 
-        ORDER BY date ASC
+        SELECT DATE(created_at) as date, COUNT(*) as cnt
+        FROM search_log
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY date
+    </select>
+    <select id="hotKeywordsCount" resultType="java.lang.Long">
+        SELECT COUNT(1) as cnt
+        FROM search_log
     </select>
 
 </mapper>

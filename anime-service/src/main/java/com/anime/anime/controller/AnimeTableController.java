@@ -125,6 +125,7 @@ public class AnimeTableController {
             @RequestParam(value = "days", defaultValue = "7") int days) {
         Map<String, Object> data = new HashMap<>();
         data.put("hotKeywords", searchLogMapper.hotKeywords(limit));
+        data.put("totalKeywordsCount", searchLogMapper.hotKeywordsCount());
         data.put("trend", searchLogMapper.searchTrend(days));
         data.put("totalSearches", searchLogMapper.selectCount(null));
         return Result.ok(data);
