@@ -78,6 +78,7 @@ public class CrawlerProgressService {
         progress.setProcessedItems(progress.getProcessedItems() + itemsInPage);
         progress.setSuccessCount(progress.getSuccessCount() + successCount);
         progress.setFailCount(progress.getFailCount() + failCount);
+        progress.setTotalPages(totalPages);
         
         // 计算进度百分比
         if (totalPages > 0) {
