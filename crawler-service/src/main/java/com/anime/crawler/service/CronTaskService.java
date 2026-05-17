@@ -260,8 +260,7 @@ public class CronTaskService {
 
         try {
             // 创建进度跟踪并获取taskKey
-            String typeName = progressService.getTypeName(task.getTaskType());
-            String taskKey = progressService.createProgress(task.getTaskType(), 
+            String taskKey = progressService.createProgress(task.getTaskType(),
                 task.getTaskName(), null);
             
             // 根据任务类型执行对应的爬取方法

@@ -41,10 +41,10 @@ import java.util.*;
 public class Https1080Zyk3CrawlerService {
     @Value("${crawler.video-list-url:https://api.yyzy-tv.vip/inc/apijson.php?ac=list}")
     private String videoListUrl;
-    
+
     @Value("${crawler.video-detail-url:https://api.yyzy-tv.vip/inc/apijson.php?ac=detail&ids=}")
     private String videoDetailUrl;
-    
+
     @Value("${crawler.video-update-by-hour:https://api.yyzy-tv.vip/inc/apijson.php?ac=detail&h=}")
     private String videoUpdateByHour;
 
@@ -82,50 +82,22 @@ public class Https1080Zyk3CrawlerService {
     @Async("crawlerTaskExecutor")
     public void clawerByHourAsync(Integer type, Integer hour, Integer page, String taskKey) {
         currentTaskKey.set(taskKey);
-
         try {
-            clawerByHour(type, hour, page);
+            doHttpRequest(false, hour, type, page, taskKey);
             progressService.markCompleted(taskKey);
         } catch (Exception e) {
             progressService.markFailed(taskKey, e.getMessage());
             throw e;
         } finally {
             currentTaskKey.remove();
-        }
-    }
-
-    public void clawerByHour(Integer type, Integer hour, Integer page) {
-        String url = videoUpdateByHour + hour + "&t=" + type + "&pg=" + page;
-        JSONObject listResult = httpGet(url);
-        Integer pagecount = listResult.getInt("pagecount");
-
-        // 优化：使用StringBuilder减少字符串拼接开销
-        String typeName = getTypeName(type);
-        log.info("{}:拉取{}小时内变动的数据,当前第{}/{}页", typeName, hour, page, pagecount);
-        JSONArray detailJsonArray = listResult.getJSONArray("list");
-        int itemsInPage = detailJsonArray != null ? detailJsonArray.size() : 0;
-
-        // 处理数据
-        processAnimeData(detailJsonArray);
-
-        // 更新进度
-        String taskKey = currentTaskKey.get();
-        if (taskKey != null) {
-            progressService.updatePageProgress(taskKey, page, pagecount, itemsInPage, itemsInPage, 0);
-        }
-
-        if (page < pagecount) {
-            // 异步递归调用，每一页都提交为独立的异步任务
-            clawerByHour(type, hour, page + 1);
         }
     }
 
     @Async("crawlerTaskExecutor")
     public void clawerByTypeAsync(Integer type, Integer page, String taskKey) {
         currentTaskKey.set(taskKey);
-
         try {
-            clawerByType(type, page);
+            doHttpRequest(true, null, type, page, taskKey);
             progressService.markCompleted(taskKey);
         } catch (Exception e) {
             progressService.markFailed(taskKey, e.getMessage());
@@ -135,17 +107,21 @@ public class Https1080Zyk3CrawlerService {
         }
     }
 
-    public void clawerByType(Integer type, Integer page) {
-        String url = videoListUrl + "&t=" + type + "&pg=" + page;
+
+    private void doHttpRequest(Boolean isAll, Integer hour, Integer type, Integer page, String taskKey) {
+        String url;
+        if (isAll) {
+            url = videoListUrl + "&t=" + type + "&pg=" + page;
+        } else {
+            url = videoUpdateByHour + hour + "&t=" + type + "&pg=" + page;
+        }
         JSONObject listResult = httpGet(url);
         Integer pagecount = listResult.getInt("pagecount");
 
         // 优化：使用StringBuilder减少字符串拼接开销
         String typeName = getTypeName(type);
-        log.info("{}:根据动漫种类获取所有数据,当前第{}/{}页", typeName, page, pagecount);
-
+        log.info("{}:拉取{}小时内变动的数据,当前第{}/{}页", typeName, hour, page, pagecount);
         JSONArray jsonArray = listResult.getJSONArray("list");
-        // 优化：预先分配ArrayList容量
         List<Integer> ids = new ArrayList<>(jsonArray.size());
         for (int i = 0; i < jsonArray.size(); i++) {
             JSONObject item = jsonArray.getJSONObject(i);
@@ -159,16 +135,14 @@ public class Https1080Zyk3CrawlerService {
 
         // 处理数据
         processAnimeData(detailJsonArray);
-
         // 更新进度
-        String taskKey = currentTaskKey.get();
         if (taskKey != null) {
             progressService.updatePageProgress(taskKey, page, pagecount, itemsInPage, itemsInPage, 0);
         }
 
         if (page < pagecount) {
             // 异步递归调用，每一页都提交为独立的异步任务
-            clawerByType(type, page + 1);
+            doHttpRequest(isAll, type, hour, page + 1, taskKey);
         }
     }
 
