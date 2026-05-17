@@ -60,7 +60,7 @@ public class AuthController {
      * @return 注册结果，包含access_token
      */
     @PostMapping("/register")
-    public Result<LoginVO> register(@Validated @RequestBody UserRegisterDTO registerDTO,
+    public Result< Map<String, String> > register(@Validated @RequestBody UserRegisterDTO registerDTO,
                                     HttpServletRequest request) {
         String ip = getClientIp(request);
         log.info("用户注册请求，IP: {}, username: {}", ip, registerDTO.getUsername());
@@ -87,8 +87,10 @@ public class AuthController {
 
         LoginVO loginVO = new LoginVO();
         loginVO.setAccessToken(token);
+        Map<String, String> map = new HashMap<>();
+        map.put("access_token", token);
         log.info("用户注册成功，username: {}", registerDTO.getUsername());
-        return Result.ok(loginVO);
+        return Result.ok(map);
     }
 
     /**
