@@ -3,11 +3,13 @@ package com.anime.common.exception;
 import com.anime.common.enums.ResultCodeEnum;
 import com.anime.common.result.Result;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -33,7 +35,6 @@ public class GlobalExceptionHandler {
         log.error("业务异常：{}", e.getMessage(), e);
         return Result.fail(e.getCode(), e.getMessage());
     }
-
     /**
      * 处理系统异常
      */
@@ -63,26 +64,32 @@ public class GlobalExceptionHandler {
 
     /**
      * 处理参数校验异常（@Valid/@Validated）
+     * 返回HTTP 200状态码，业务code为400
      */
+    @ResponseStatus(HttpStatus.OK)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Result<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         log.warn("参数校验异常：{}", message);
-        return Result.fail(ResultCodeEnum.PARAM_ERROR.getCode(), message);
+        // 返回HTTP 200，但业务code为400
+        return Result.fail(ResultCodeEnum.PARAM_ERROR.getCode(), "参数错误: " + message);
     }
 
     /**
      * 处理绑定异常
+     * 返回HTTP 200状态码，业务code为400
      */
+    @ResponseStatus(HttpStatus.OK)
     @ExceptionHandler(BindException.class)
     public Result<?> handleBindException(BindException e) {
         String message = e.getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         log.warn("参数绑定异常：{}", message);
-        return Result.fail(ResultCodeEnum.PARAM_ERROR.getCode(), message);
+        // 返回HTTP 200，但业务code为400
+        return Result.fail(ResultCodeEnum.PARAM_ERROR.getCode(), "参数错误: " + message);
     }
 
     /**

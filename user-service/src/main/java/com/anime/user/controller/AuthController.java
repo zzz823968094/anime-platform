@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 public class AuthController {
 
     private final UserService userService;
-    private final StringRedisTemplate redisTemplate;
 
     /**
      * 获取个人信息
@@ -66,15 +65,6 @@ public class AuthController {
         String ip = getClientIp(request);
         log.info("用户注册请求，IP: {}, username: {}", ip, registerDTO.getUsername());
 
-        // IP注册频率限制
-//        String redisKey = String.format(RedisConstant.IP_REGISTER_COUNT_KEY, ip);
-//        String countStr = redisTemplate.opsForValue().get(redisKey);
-//        int count = countStr == null ? 0 : Integer.parseInt(countStr);
-
-//        if (count >= CommonConstant.MAX_REGISTER_PER_IP_PER_DAY) {
-//            log.warn("IP注册次数超限，IP: {}", ip);
-//            return Result.fail(ResultCodeEnum.TOO_MANY_REQUESTS);
-//        }
         String username = registerDTO.getUsername();
         String password = registerDTO.getPassword();
         // 执行注册
@@ -85,12 +75,6 @@ public class AuthController {
             return Result.fail(e.getMessage());
         }
 
-//        // 注册成功，IP计数+1，24小时过期
-//        if (countStr == null) {
-//            redisTemplate.opsForValue().set(redisKey, "1", RedisConstant.IP_REGISTER_EXPIRE, TimeUnit.SECONDS);
-//        } else {
-//            redisTemplate.opsForValue().increment(redisKey);
-//        }
 
         LoginVO loginVO = new LoginVO();
         loginVO.setAccessToken(token);
