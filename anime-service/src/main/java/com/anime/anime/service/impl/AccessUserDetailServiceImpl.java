@@ -317,7 +317,7 @@ public class AccessUserDetailServiceImpl extends ServiceImpl<AccessUserDetailMap
      * 每次最多查询100个IP，遵循免费版每分钟45次请求限制
      */
     @Override
-    @Scheduled(cron = "0 0 2 * * ?", zone = "Asia/Shanghai")
+    @Scheduled(cron = "2 0 0 * * ?", zone = "Asia/Shanghai")
     @Transactional(rollbackFor = Exception.class)
     public void batchUpdateLocationInfo() {
         log.info("开始执行IP地理位置批量更新任务");
