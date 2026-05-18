@@ -3,6 +3,7 @@ package com.anime.user.controller;
 import com.anime.common.constant.CommonConstant;
 import com.anime.common.constant.RedisConstant;
 import com.anime.common.enums.ResultCodeEnum;
+import com.anime.common.exception.BusinessException;
 import com.anime.common.result.Result;
 import com.anime.user.entity.dto.UserLoginDTO;
 import com.anime.user.entity.dto.UserRegisterDTO;
@@ -60,36 +61,42 @@ public class AuthController {
      * @return 注册结果，包含access_token
      */
     @PostMapping("/register")
-    public Result< Map<String, String> > register(@Validated @RequestBody UserRegisterDTO registerDTO,
-                                    HttpServletRequest request) {
+    public Result<Map<String, String>> register(@Validated @RequestBody UserRegisterDTO registerDTO,
+                                                HttpServletRequest request) {
         String ip = getClientIp(request);
         log.info("用户注册请求，IP: {}, username: {}", ip, registerDTO.getUsername());
 
         // IP注册频率限制
-        String redisKey = String.format(RedisConstant.IP_REGISTER_COUNT_KEY, ip);
-        String countStr = redisTemplate.opsForValue().get(redisKey);
-        int count = countStr == null ? 0 : Integer.parseInt(countStr);
+//        String redisKey = String.format(RedisConstant.IP_REGISTER_COUNT_KEY, ip);
+//        String countStr = redisTemplate.opsForValue().get(redisKey);
+//        int count = countStr == null ? 0 : Integer.parseInt(countStr);
 
-        if (count >= CommonConstant.MAX_REGISTER_PER_IP_PER_DAY) {
-            log.warn("IP注册次数超限，IP: {}", ip);
-            return Result.fail(ResultCodeEnum.TOO_MANY_REQUESTS);
-        }
-
+//        if (count >= CommonConstant.MAX_REGISTER_PER_IP_PER_DAY) {
+//            log.warn("IP注册次数超限，IP: {}", ip);
+//            return Result.fail(ResultCodeEnum.TOO_MANY_REQUESTS);
+//        }
+        String username = registerDTO.getUsername();
+        String password = registerDTO.getPassword();
         // 执行注册
-        String token = userService.register(registerDTO.getUsername(), registerDTO.getPassword());
-
-        // 注册成功，IP计数+1，24小时过期
-        if (countStr == null) {
-            redisTemplate.opsForValue().set(redisKey, "1", RedisConstant.IP_REGISTER_EXPIRE, TimeUnit.SECONDS);
-        } else {
-            redisTemplate.opsForValue().increment(redisKey);
+        String token;
+        try {
+            token = userService.register(username, password);
+        } catch (BusinessException e) {
+            return Result.fail(e.getMessage());
         }
+
+//        // 注册成功，IP计数+1，24小时过期
+//        if (countStr == null) {
+//            redisTemplate.opsForValue().set(redisKey, "1", RedisConstant.IP_REGISTER_EXPIRE, TimeUnit.SECONDS);
+//        } else {
+//            redisTemplate.opsForValue().increment(redisKey);
+//        }
 
         LoginVO loginVO = new LoginVO();
         loginVO.setAccessToken(token);
         Map<String, String> map = new HashMap<>();
         map.put("access_token", token);
-        log.info("用户注册成功，username: {}", registerDTO.getUsername());
+        log.info("用户注册成功，username: {}", username);
         return Result.ok(map);
     }
 
