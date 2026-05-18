@@ -8,7 +8,7 @@
         FROM access_user_detail a
                  INNER JOIN access_user_detail b ON a.ip = b.ip
         WHERE a.visit_date = #{baseDate}
-          AND b.visit_date = DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{baseDate}, '%Y%m%d'), INTERVAL 1 DAY), '%Y%m%d')
+          AND b.visit_date = DATE_FORMAT(DATE_SUB(STR_TO_DATE(#{baseDate}, '%Y%m%d'), INTERVAL #{days} DAY), '%Y%m%d')
     </select>
 
     <!-- 获取基准日期的活跃用户数 -->
