@@ -523,10 +523,10 @@ public class Https1080Zyk3CrawlerService {
         animeTable.setVodSerial(jsonObject.getStr("vod_serial"));
 
         // 统计信息
-        animeTable.setVodHits(jsonObject.getInt("vod_hits"));
-        animeTable.setVodHitsDay(jsonObject.getInt("vod_hits_day"));
-        animeTable.setVodHitsWeek(jsonObject.getInt("vod_hits_week"));
-        animeTable.setVodHitsMonth(jsonObject.getInt("vod_hits_month"));
+//        animeTable.setVodHits(jsonObject.getInt("vod_hits"));
+//        animeTable.setVodHitsDay(jsonObject.getInt("vod_hits_day"));
+//        animeTable.setVodHitsWeek(jsonObject.getInt("vod_hits_week"));
+//        animeTable.setVodHitsMonth(jsonObject.getInt("vod_hits_month"));
         animeTable.setVodUp(jsonObject.getInt("vod_up"));
         animeTable.setVodDown(jsonObject.getInt("vod_down"));
 
