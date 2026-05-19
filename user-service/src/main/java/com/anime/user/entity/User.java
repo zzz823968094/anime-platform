@@ -77,6 +77,7 @@ public class User extends BaseEntity {
     /**
      * IP地址
      */
+    @TableField(exist = false)
     private String ip;
 
     /**

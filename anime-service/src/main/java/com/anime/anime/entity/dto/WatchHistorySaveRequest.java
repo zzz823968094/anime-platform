@@ -1,5 +1,7 @@
 package com.anime.anime.entity.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 /**
@@ -7,16 +9,19 @@ import lombok.Data;
  */
 @Data
 public class WatchHistorySaveRequest {
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
 
     /**
      * 动漫ID
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long animeId;
 
     /**
      * 视频ID
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long videoId;
 
     /**

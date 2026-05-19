@@ -1,5 +1,7 @@
 package com.anime.user.entity.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.io.Serial;
@@ -22,6 +24,7 @@ public class UserInfoVO implements Serializable {
     /**
      * 用户ID
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     /**

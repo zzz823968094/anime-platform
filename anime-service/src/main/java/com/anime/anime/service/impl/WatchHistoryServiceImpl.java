@@ -28,6 +28,7 @@ public class WatchHistoryServiceImpl extends ServiceImpl<WatchHistoryMapper, Wat
         
         if (existing != null) {
             // 更新现有记录
+            existing.setAnimeId(request.getAnimeId());
             existing.setVideoId(request.getVideoId());
             existing.setEpisode(request.getEpisode());
             if (request.getProgress() != null) {
@@ -50,6 +51,7 @@ public class WatchHistoryServiceImpl extends ServiceImpl<WatchHistoryMapper, Wat
             // 创建新记录
             WatchHistory history = new WatchHistory();
             BeanUtils.copyProperties(request,history);
+            history.setAnimeId(request.getAnimeId());
             history.setProgress(request.getProgress() != null ? request.getProgress() : 0.0);
             history.setWatchDuration(request.getWatchDuration() != null ? request.getWatchDuration() : 0);
             history.setLastWatchTime(now);
