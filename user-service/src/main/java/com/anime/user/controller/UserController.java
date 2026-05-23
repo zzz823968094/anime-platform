@@ -29,6 +29,24 @@ public class UserController {
     private final UserService userService;
 
     /**
+     * 获取当前用户信息
+     * @param userId 用户ID
+     * @return 用户信息
+     */
+    @GetMapping("me")
+    public Result<User> me(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        User user = userService.getById(userId);
+        if (user == null) {
+            log.warn("用户不存在，id: {}", userId);
+            return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "用户不存在");
+        }
+
+        // 清除密码信息，防止敏感数据泄露
+        user.setPassword(null);
+        return Result.ok(user);
+    }
+
+    /**
      * 分页查询普通用户列表
      *
      * @param pageNum  页码
