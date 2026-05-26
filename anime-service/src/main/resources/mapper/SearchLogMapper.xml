@@ -4,10 +4,12 @@
 
     <!-- 热门搜索词统计（按搜索次数降序） -->
     <select id="hotKeywords" resultType="java.util.HashMap">
-        SELECT keyword, COUNT(*) as cnt 
-        FROM search_log 
-        GROUP BY keyword 
-        ORDER BY cnt DESC 
+        SELECT keyword, COUNT(*) AS cnt
+        FROM search_log
+        WHERE created_at BETWEEN DATE_SUB(NOW(), INTERVAL #{days} DAY) AND NOW()
+        GROUP BY keyword
+        HAVING cnt >= 10
+        ORDER BY cnt DESC
         LIMIT #{limit}
     </select>
 
@@ -23,5 +25,23 @@
         SELECT COUNT(1) as cnt
         FROM search_log
     </select>
-
+    <select id="keywordList" resultType="com.anime.anime.entity.vo.SearchListVO">
+        SELECT keyword, COUNT(*) AS cnt
+        FROM search_log
+        WHERE created_at BETWEEN DATE_SUB(NOW(), INTERVAL #{days} DAY) AND NOW()
+        GROUP BY keyword
+        HAVING cnt >= 10
+        ORDER BY cnt DESC
+        LIMIT #{pageNum}, #{pageSize}
+    </select>
+    <select id="keywordListCount" resultType="java.lang.Long">
+        SELECT COUNT(*) AS total
+        FROM (
+                 SELECT keyword
+                 FROM search_log
+                 WHERE created_at BETWEEN DATE_SUB(NOW(), INTERVAL #{days} DAY) AND NOW()
+                 GROUP BY keyword
+                 HAVING COUNT(*) >= 10
+             ) AS temp
+    </select>
 </mapper>

@@ -4,6 +4,7 @@ import com.anime.anime.entity.AnimeTable;
 import com.anime.anime.entity.SearchLog;
 import com.anime.anime.entity.dto.AccessStatsDTO;
 import com.anime.anime.entity.dto.DeviceStatsDTO;
+import com.anime.anime.entity.vo.SearchListVO;
 import com.anime.anime.mapper.AnimeTableMapper;
 import com.anime.anime.mapper.SearchLogMapper;
 import com.anime.anime.service.AccessDataService;
@@ -11,6 +12,7 @@ import com.anime.anime.service.AccessUserDetailService;
 import com.anime.anime.service.AnimeTableService;
 import com.anime.anime.service.DeviceStatisticsService;
 import com.anime.common.constant.CommonConstant;
+import com.anime.common.result.PageResult;
 import com.anime.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
@@ -121,14 +123,17 @@ public class AnimeTableController {
      */
     @GetMapping("/search/stats")
     public Result searchStats(
-            @RequestParam(value = "limit", defaultValue = "20") int limit,
-            @RequestParam(value = "days", defaultValue = "7") int days) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("hotKeywords", searchLogMapper.hotKeywords(limit));
-        data.put("totalKeywordsCount", searchLogMapper.hotKeywordsCount());
-        data.put("trend", searchLogMapper.searchTrend(days));
-        data.put("totalSearches", searchLogMapper.selectCount(null));
-        return Result.ok(data);
+            @RequestParam(value = "days", defaultValue = "1") int days,
+            @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
+            @RequestParam(value = "pageSize", defaultValue = "20") int pageSize
+    ) {
+        PageResult<SearchListVO> pageResult = new PageResult<>();
+        pageResult.setRecords(searchLogMapper.keywordList(days, (pageNum - 1) * pageSize, pageSize));
+        pageResult.setTotal(searchLogMapper.keywordListCount(days, (pageNum - 1) * pageSize, pageSize));
+        pageResult.setCurrent((long) pageNum);
+        pageResult.setSize((long) pageSize);
+        pageResult.setPages(pageResult.getTotal() % pageResult.getSize() == 0 ? pageResult.getTotal() / pageResult.getSize() : pageResult.getTotal() / pageResult.getSize() + 1);
+        return Result.ok(pageResult);
     }
 
     @GetMapping("/recommend/hot")
