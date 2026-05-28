@@ -6,9 +6,10 @@ import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
 public interface CronTaskLogMapper extends BaseMapper<CronTaskLog> {
-    
+
     /**
      * 删除超过指定小时数的任务日志
+     *
      * @param hours 小时数
      * @return 删除的记录数
      */

@@ -3,6 +3,7 @@ package com.anime.common.aspect;
 import com.anime.common.annotation.PreventRepeatSubmit;
 import com.anime.common.constant.RedisConstant;
 import com.anime.common.exception.BusinessException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +55,7 @@ public class PreventRepeatSubmitAspect {
         String ip = getClientIp(request);
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
-        String key = String.format(RedisConstant.LOCK_KEY, 
+        String key = String.format(RedisConstant.LOCK_KEY,
                 "repeat_submit:" + ip + ":" + method.getDeclaringClass().getName() + "." + method.getName());
 
         int lockTime = preventRepeatSubmit.lockTime();
@@ -63,7 +63,7 @@ public class PreventRepeatSubmitAspect {
 
         // 尝试获取锁
         Boolean success = redisTemplate.opsForValue().setIfAbsent(key, "1", lockTime, TimeUnit.SECONDS);
-        
+
         if (Boolean.FALSE.equals(success)) {
             log.warn("重复提交拦截，IP: {}, 方法: {}", ip, method.getName());
             throw new BusinessException(message);

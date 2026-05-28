@@ -39,15 +39,6 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class Https1080Zyk3CrawlerService {
-    @Value("${crawler.video-list-url:https://api.yyzy-tv.vip/inc/apijson.php?ac=list}")
-    private String videoListUrl;
-
-    @Value("${crawler.video-detail-url:https://api.yyzy-tv.vip/inc/apijson.php?ac=detail&ids=}")
-    private String videoDetailUrl;
-
-    @Value("${crawler.video-update-by-hour:https://api.yyzy-tv.vip/inc/apijson.php?ac=detail&h=}")
-    private String videoUpdateByHour;
-
     // 预编译常用字符串，避免重复创建
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     private static final String ACCEPT_HEADER = "application/json, text/plain, */*";
@@ -56,17 +47,20 @@ public class Https1080Zyk3CrawlerService {
     private static final int HTTP_TIMEOUT = 30000; // 30秒超时
     private static final int MAX_RETRIES = 3;
     private static final int BATCH_SIZE = 100;
-
+    // ThreadLocal存储当前任务的taskKey
+    private static final ThreadLocal<String> currentTaskKey = new ThreadLocal<>();
     private final AnimeTableMapper animeTableMapper;
     private final VideoMapper videoMapper;
     private final ProxyConfig proxyConfig;
     private final com.anime.crawler.service.CrawlerProgressService progressService;
-
+    @Value("${crawler.video-list-url:https://api.yyzy-tv.vip/inc/apijson.php?ac=list}")
+    private String videoListUrl;
+    @Value("${crawler.video-detail-url:https://api.yyzy-tv.vip/inc/apijson.php?ac=detail&ids=}")
+    private String videoDetailUrl;
+    @Value("${crawler.video-update-by-hour:https://api.yyzy-tv.vip/inc/apijson.php?ac=detail&h=}")
+    private String videoUpdateByHour;
     // 缓存代理对象，避免重复创建
     private volatile Proxy cachedProxy = null;
-
-    // ThreadLocal存储当前任务的taskKey
-    private static final ThreadLocal<String> currentTaskKey = new ThreadLocal<>();
 
     @Async("crawlerTaskExecutor")
     public void clawerOneAsync(String id) {
@@ -132,14 +126,12 @@ public class Https1080Zyk3CrawlerService {
         JSONObject detailResult = httpGet(videoDetailUrl + idsString);
         JSONArray detailJsonArray = detailResult.getJSONArray("list");
         int itemsInPage = detailJsonArray != null ? detailJsonArray.size() : 0;
-
-        // 处理数据
-        processAnimeData(detailJsonArray);
         // 更新进度
         if (taskKey != null) {
             progressService.updatePageProgress(taskKey, page, pagecount, itemsInPage, itemsInPage, 0);
         }
-
+        // 处理数据
+        processAnimeData(detailJsonArray);
         if (page < pagecount) {
             // 异步递归调用，每一页都提交为独立的异步任务
             doHttpRequest(isAll, type, hour, page + 1, taskKey);

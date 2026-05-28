@@ -18,18 +18,18 @@ public class MybatisPlusConfig {
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
-        
+
         // 添加分页插件,指定数据库类型为MySQL
         PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
-        
+
         // 设置单页最大条数,防止恶意请求
         paginationInterceptor.setMaxLimit(500L);
-        
+
         // 溢出总页数后是否进行处理(默认不处理)
         paginationInterceptor.setOverflow(false);
-        
+
         interceptor.addInnerInterceptor(paginationInterceptor);
-        
+
         return interceptor;
     }
 }

@@ -12,15 +12,15 @@
 
     <!-- 查询指定日期的设备统计 -->
     <select id="getDeviceByDate" resultType="com.anime.anime.entity.DeviceStatistics">
-        SELECT date, device_model, os, user_count 
-        FROM device_statistics 
-        WHERE date = #{date} 
+        SELECT date, device_model, os, user_count
+        FROM device_statistics
+        WHERE date = #{date}
         ORDER BY user_count DESC
     </select>
 
     <!-- 查询总访问人数（所有日期的累加） -->
     <select id="getTotalUserCount" resultType="java.lang.Long">
-        SELECT SUM(user_count) AS total_user_count 
+        SELECT SUM(user_count) AS total_user_count
         FROM device_statistics
     </select>
 

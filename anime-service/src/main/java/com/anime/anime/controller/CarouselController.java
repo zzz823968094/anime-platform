@@ -41,11 +41,11 @@ public class CarouselController {
         wrapper.orderByAsc(Carousel::getSortOrder);
         List<Carousel> carouselList = carouselService.list(wrapper);
         List<AnimeTable> list;
-        if(null == carouselList || carouselList.isEmpty()){
+        if (null == carouselList || carouselList.isEmpty()) {
             list = animeTableService.search(null, CommonConstant.DEFAULT_PAGE_NUM, CommonConstant.RECOMMEND_DEFAULT_SIZE / 2).getRecords();
-        }else{
+        } else {
             list = new ArrayList<>();
-            carouselList.forEach(it->{
+            carouselList.forEach(it -> {
                 AnimeTable animeTable = animeTableService.getById(it.getVideoId());
                 list.add(animeTable);
             });

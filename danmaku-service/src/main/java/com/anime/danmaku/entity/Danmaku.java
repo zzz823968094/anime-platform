@@ -24,46 +24,46 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @TableName("danmaku")
 public class Danmaku extends BaseEntity {
-    
+
     /**
      * 主键ID
      */
     @TableId(type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
-    
+
     /**
      * 视频ID
      */
     @JsonSerialize(using = ToStringSerializer.class)
     private Long videoId;
-    
+
     /**
      * 用户ID
      */
     @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
-    
+
     /**
      * 弹幕内容
      */
     private String content;
-    
+
     /**
      * 时间点（秒）
      */
     private Float timePoint;
-    
+
     /**
      * 颜色
      */
     private String color;
-    
+
     /**
      * 弹幕类型：1-滚动，2-顶部，3-底部
      */
     private Integer dmType;
-    
+
     /**
      * 状态：0-正常，1-屏蔽
      */

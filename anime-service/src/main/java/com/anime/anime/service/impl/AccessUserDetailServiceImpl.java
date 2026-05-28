@@ -34,34 +34,28 @@ import java.util.concurrent.TimeUnit;
 public class AccessUserDetailServiceImpl extends ServiceImpl<AccessUserDetailMapper, AccessUserDetail>
         implements AccessUserDetailService {
 
-    private final AccessUserDetailMapper accessUserDetailMapper;
-
-    private final StringRedisTemplate stringRedisTemplate;
-
     /**
      * IP地理位置查询API地址（批量接口）
      */
     private static final String IP_API_BATCH_URL = "http://ip-api.com/batch";
-
     /**
      * 批量处理大小（每次最多100个IP）
      */
     private static final int BATCH_SIZE = 100;
-
     /**
      * API请求间隔时间（毫秒）- 免费版限制每分钟45次请求
      */
     private static final long API_REQUEST_INTERVAL = 1333L; // 1000ms * 60 / 45 ≈ 1333ms
-
     /**
      * Redis Key前缀 - 访问记录Set
      */
     private static final String REDIS_KEY_PREFIX = "access:user:detail:";
-
     /**
      * Redis Key过期时间（天）
      */
     private static final long REDIS_KEY_EXPIRE_DAYS = 3L;
+    private final AccessUserDetailMapper accessUserDetailMapper;
+    private final StringRedisTemplate stringRedisTemplate;
 
     /**
      * 记录用户访问（同时保存用户ID和IP）
@@ -427,7 +421,7 @@ public class AccessUserDetailServiceImpl extends ServiceImpl<AccessUserDetailMap
     /**
      * 重试失败的IP查询
      *
-     * @param failedIps 失败的IP列表
+     * @param failedIps     失败的IP列表
      * @param ipLocationMap 成功的IP地理位置映射表
      */
     private void retryFailedIps(List<String> failedIps, Map<String, JSONObject> ipLocationMap) {

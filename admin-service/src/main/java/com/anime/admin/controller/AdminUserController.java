@@ -46,9 +46,9 @@ public class AdminUserController {
             HttpServletRequest request
     ) {
         log.info("分页查询管理员列表，pageNum: {}, pageSize: {}", pageNum, pageSize);
-        
+
         LambdaQueryWrapper<AdminUser> queryWrapper = new LambdaQueryWrapper<>();
-        
+
         // 排除当前登录的管理员自己
         String userIdHeader = request.getHeader("X-User-Id");
         if (userIdHeader != null) {
@@ -59,7 +59,7 @@ public class AdminUserController {
                 log.warn("用户ID解析失败，userIdHeader: {}", userIdHeader);
             }
         }
-        
+
         if (name != null && !name.isBlank()) {
             queryWrapper.like(AdminUser::getName, name);
         }
@@ -149,14 +149,14 @@ public class AdminUserController {
         if (statusStr == null || statusStr.isBlank()) {
             return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "状态参数不能为空");
         }
-        
+
         UserStatusEnum status;
         try {
             status = UserStatusEnum.valueOf(statusStr);
         } catch (IllegalArgumentException e) {
             return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "无效的状态值: " + statusStr);
         }
-        
+
         AdminUser update = new AdminUser();
         update.setStatus(status);
         AdminUser updated = adminUserService.updateAdmin(id, update);

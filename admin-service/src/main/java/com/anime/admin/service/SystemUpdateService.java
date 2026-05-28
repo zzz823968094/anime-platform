@@ -45,10 +45,10 @@ public class SystemUpdateService {
             if (updating) {
                 // 设置为维护状态，并设置过期时间防止永久锁定
                 stringRedisTemplate.opsForValue().set(
-                    CommonConstant.REDIS_KEY_SYSTEM_UPDATE_STATUS, 
-                    "true", 
-                    CommonConstant.SYSTEM_MAINTENANCE_DEFAULT_EXPIRE_HOURS,
-                    TimeUnit.HOURS
+                        CommonConstant.REDIS_KEY_SYSTEM_UPDATE_STATUS,
+                        "true",
+                        CommonConstant.SYSTEM_MAINTENANCE_DEFAULT_EXPIRE_HOURS,
+                        TimeUnit.HOURS
                 );
                 log.info("系统已设置为维护模式（{}小时后自动恢复）", CommonConstant.SYSTEM_MAINTENANCE_DEFAULT_EXPIRE_HOURS);
             } else {
@@ -98,10 +98,10 @@ public class SystemUpdateService {
         try {
             if (message != null && !message.isEmpty()) {
                 stringRedisTemplate.opsForValue().set(
-                    CommonConstant.REDIS_KEY_SYSTEM_UPDATE_MESSAGE, 
-                    message, 
-                    CommonConstant.SYSTEM_MAINTENANCE_DEFAULT_EXPIRE_HOURS,
-                    TimeUnit.HOURS
+                        CommonConstant.REDIS_KEY_SYSTEM_UPDATE_MESSAGE,
+                        message,
+                        CommonConstant.SYSTEM_MAINTENANCE_DEFAULT_EXPIRE_HOURS,
+                        TimeUnit.HOURS
                 );
                 log.info("更新提示信息已设置");
             }

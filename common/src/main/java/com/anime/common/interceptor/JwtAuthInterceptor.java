@@ -34,7 +34,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         // 获取Token
         String token = request.getHeader(SystemConstant.HEADER_AUTHORIZATION);
-        
+
         if (Objects.isNull(token) || !token.startsWith(SystemConstant.TOKEN_PREFIX)) {
             log.warn("请求未携带Token，IP: {}", getClientIp(request));
             throw new AuthException(ResultCodeEnum.UNAUTHORIZED);
@@ -51,7 +51,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             // 检查Redis中是否存在该Token（防止Token被注销后仍可使用）
             String redisKey = String.format(RedisConstant.USER_TOKEN_KEY, userId);
             String cachedToken = redisTemplate.opsForValue().get(redisKey);
-            
+
             if (Objects.isNull(cachedToken) || !cachedToken.equals(token)) {
                 log.warn("Token已失效，userId: {}", userId);
                 throw new AuthException(ResultCodeEnum.TOKEN_INVALID);
@@ -61,7 +61,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             long expiration = JwtUtils.getExpirationFromToken(token);
             long currentTimeMillis = System.currentTimeMillis();
             long oneDayMillis = 24 * 60 * 60 * 1000L;
-            
+
             if (expiration - currentTimeMillis < oneDayMillis) {
                 // 刷新Token过期时间
                 redisTemplate.expire(redisKey, RedisConstant.TOKEN_EXPIRE, TimeUnit.SECONDS);

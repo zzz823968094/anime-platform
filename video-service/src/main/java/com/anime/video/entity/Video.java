@@ -31,38 +31,38 @@ public class Video extends BaseEntity {
     @TableId(type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
-    
+
     /**
      * 动漫ID
      */
     @JsonSerialize(using = ToStringSerializer.class)
     private Long animeId;
-    
+
     /**
      * 集数
      */
     private Integer episode;
-    
+
     /**
      * 标题
      */
     private String title;
-    
+
     /**
      * M3U8播放地址
      */
     private String m3u8Url;
-    
+
     /**
      * 时长（秒）
      */
     private Integer duration;
-    
+
     /**
      * 播放量
      */
     private Integer viewCount;
-    
+
     /**
      * 状态：0-下线，1-上线
      */

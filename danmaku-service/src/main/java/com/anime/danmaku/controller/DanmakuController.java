@@ -30,7 +30,7 @@ public class DanmakuController {
      * 获取视频弹幕列表
      *
      * @param videoId 视频ID
-     * @param limit 限制数量，默认200
+     * @param limit   限制数量，默认200
      * @return 弹幕列表
      */
     @GetMapping("/{videoId}")
@@ -38,7 +38,7 @@ public class DanmakuController {
             @PathVariable("videoId") Long videoId,
             @RequestParam(value = "limit", defaultValue = "200") int limit) {
         log.info("获取视频弹幕列表，videoId: {}, limit: {}", videoId, limit);
-        
+
         List<Danmaku> list = danmakuMapper.selectList(
                 new LambdaQueryWrapper<Danmaku>()
                         .eq(Danmaku::getVideoId, videoId)
@@ -46,7 +46,7 @@ public class DanmakuController {
                         .orderByAsc(Danmaku::getTimePoint)
                         .last("LIMIT " + limit)
         );
-        
+
         log.info("获取视频弹幕列表完成，videoId: {}, count: {}", videoId, list.size());
         return Result.ok(list);
     }

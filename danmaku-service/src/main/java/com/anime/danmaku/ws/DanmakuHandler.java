@@ -75,13 +75,13 @@ public class DanmakuHandler extends TextWebSocketHandler {
 
             // 广播给其他人（包含 createdAt）
             Map<String, Object> broadcast = new HashMap<>();
-            broadcast.put("type",      "danmaku");
-            broadcast.put("id",        danmaku.getId());
-            broadcast.put("content",   danmaku.getContent());
+            broadcast.put("type", "danmaku");
+            broadcast.put("id", danmaku.getId());
+            broadcast.put("content", danmaku.getContent());
             broadcast.put("timePoint", danmaku.getTimePoint());
-            broadcast.put("color",     danmaku.getColor());
-            broadcast.put("dmType",    danmaku.getDmType());
-            broadcast.put("username",  data.getOrDefault("username", "匿名"));
+            broadcast.put("color", danmaku.getColor());
+            broadcast.put("dmType", danmaku.getDmType());
+            broadcast.put("username", data.getOrDefault("username", "匿名"));
             broadcast.put("createdAt", danmaku.getCreateTime() != null ? danmaku.getCreateTime().toString() : LocalDateTime.now().toString());
             String json = objectMapper.writeValueAsString(broadcast);
             connectionManager.broadcast(videoId, json, session);

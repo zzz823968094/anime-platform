@@ -79,7 +79,7 @@ jwt:
   # Token过期时间（秒）- 7天
   expiration: 604800
   # Token前缀
-  token-prefix: Bearer 
+  token-prefix: Bearer
   # Token请求头名称
   header: Authorization
 

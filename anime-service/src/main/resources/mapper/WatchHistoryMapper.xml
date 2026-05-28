@@ -4,37 +4,41 @@
 
     <!-- 查询用户的观看历史列表（按最后观看时间倒序） -->
     <select id="selectByUserId" resultType="com.anime.anime.entity.WatchHistory">
-        SELECT * 
-        FROM watch_history 
-        WHERE user_id = #{userId} 
-        ORDER BY last_watch_time DESC 
+        SELECT *
+        FROM watch_history
+        WHERE user_id = #{userId}
+        ORDER BY last_watch_time DESC
         LIMIT #{limit}
     </select>
 
     <!-- 根据用户ID和番剧ID查询观看历史 -->
     <select id="selectByUserIdAndAnimeId" resultType="com.anime.anime.entity.WatchHistory">
-        SELECT * 
-        FROM watch_history 
-        WHERE user_id = #{userId} AND anime_id = #{animeId} 
+        SELECT *
+        FROM watch_history
+        WHERE user_id = #{userId}
+          AND anime_id = #{animeId}
         LIMIT 1
     </select>
 
     <!-- 删除用户的某条观看历史 -->
     <delete id="deleteByUserIdAndAnimeId">
-        DELETE FROM watch_history 
-        WHERE user_id = #{userId} AND anime_id = #{animeId}
+        DELETE
+        FROM watch_history
+        WHERE user_id = #{userId}
+          AND anime_id = #{animeId}
     </delete>
 
     <!-- 清空用户的所有观看历史 -->
     <delete id="deleteByUserId">
-        DELETE FROM watch_history 
+        DELETE
+        FROM watch_history
         WHERE user_id = #{userId}
     </delete>
 
     <!-- 统计用户的观看历史数量 -->
     <select id="countByUserId" resultType="java.lang.Integer">
-        SELECT COUNT(*) 
-        FROM watch_history 
+        SELECT COUNT(*)
+        FROM watch_history
         WHERE user_id = #{userId}
     </select>
 

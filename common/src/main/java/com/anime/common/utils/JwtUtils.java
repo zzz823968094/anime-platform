@@ -22,7 +22,7 @@ public class JwtUtils {
      * 密钥，生产环境建议从配置文件读取
      */
     private static final String SECRET = "anime-platform-secret-key-2026-very-long";
-    
+
     /**
      * Token过期时间（7天）
      */

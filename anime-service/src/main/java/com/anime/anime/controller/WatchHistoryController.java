@@ -27,7 +27,7 @@ public class WatchHistoryController {
      */
     @PostMapping("/save")
     public Result saveHistory(@RequestBody WatchHistorySaveRequest request,
-                                 @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+                              @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
             return Result.fail(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "请先登录");
         }
@@ -46,7 +46,7 @@ public class WatchHistoryController {
      */
     @GetMapping("/list")
     public Result getHistory(@RequestParam(value = "limit", defaultValue = "100") int limit,
-                                @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+                             @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
             return Result.fail(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "请先登录");
         }
@@ -60,7 +60,7 @@ public class WatchHistoryController {
      */
     @DeleteMapping("/{animeId}")
     public Result deleteHistory(@PathVariable("animeId") Long animeId,
-                                   @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+                                @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) {
             return Result.fail(CommonConstant.HTTP_STATUS_UNAUTHORIZED, "请先登录");
         }

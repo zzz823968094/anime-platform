@@ -20,14 +20,13 @@
 
     <!-- 按地理位置统计访问用户数 -->
     <select id="getLocationStats" resultType="com.anime.anime.entity.dto.LocationStatDTO">
-        SELECT
-            location_country as country,
-            location_province as province,
-            location_city as city,
-            COUNT(DISTINCT ip) as ipCount
+        SELECT location_country   as country,
+               location_province  as province,
+               location_city      as city,
+               COUNT(DISTINCT ip) as ipCount
         FROM access_user_detail
         WHERE visit_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL #{days} DAY), '%Y%m%d')
-        AND location_country IS NOT NULL
+          AND location_country IS NOT NULL
         GROUP BY location_country, location_province, location_city
         ORDER BY ipCount DESC
     </select>

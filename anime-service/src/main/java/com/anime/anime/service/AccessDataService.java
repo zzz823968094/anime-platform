@@ -25,10 +25,12 @@ public interface AccessDataService extends IService<AccessData> {
      * 获取总访问人数
      */
     Long getTotalUserCount();
+
     /**
      * 获取今日App实时访问人数
      */
     Integer getTodayAppRealTimeUserCount();
+
     /**
      * 获取今日Web实时访问人数
      */

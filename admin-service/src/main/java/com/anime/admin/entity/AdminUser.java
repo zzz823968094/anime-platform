@@ -10,8 +10,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
 /**
  * 管理员实体类
  * 遵循阿里巴巴开发规范
@@ -24,7 +22,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @TableName("admin_user")
 public class AdminUser extends BaseEntity {
-    
+
     /**
      * 主键ID
      */
@@ -35,23 +33,23 @@ public class AdminUser extends BaseEntity {
      * 账号
      */
     private String account;
-    
+
     /**
      * 姓名
      */
     private String name;
-    
+
     /**
      * 手机号
      */
     private String phone;
-    
+
     /**
      * 密码（不对外暴露）
      */
     @JsonIgnore
     private String password;
-    
+
     /**
      * 状态
      */

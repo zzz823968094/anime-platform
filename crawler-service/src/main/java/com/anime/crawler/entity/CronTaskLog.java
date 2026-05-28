@@ -19,17 +19,17 @@ public class CronTaskLog implements Serializable {
 
     @JsonSerialize(using = ToStringSerializer.class)
     private Long taskId;
-    
+
     private String taskName;
-    
+
     private Integer taskType;
-    
+
     private Date startTime;
-    
+
     private Date endTime;
-    
+
     private String status;
-    
+
     private String message;
 
     private Date createdAt;

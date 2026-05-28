@@ -23,14 +23,13 @@ import java.time.Duration;
 @Component
 public class RegisterRateLimitFilter implements GlobalFilter, Ordered {
 
+    // 每个 IP 每分钟最多请求注册接口 5 次
+    private static final int MAX_PER_MINUTE = 5;
     private final ReactiveStringRedisTemplate redisTemplate;
 
     public RegisterRateLimitFilter(ReactiveStringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
-
-    // 每个 IP 每分钟最多请求注册接口 5 次
-    private static final int MAX_PER_MINUTE = 5;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

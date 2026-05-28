@@ -29,19 +29,19 @@ public class AccessUserDetailController {
     @GetMapping("/retention")
     public Result getRetentionRate(
             @RequestParam(required = false) Integer baseDate) {
-        
+
         if (baseDate == null) {
             // 默认使用昨天的日期
             baseDate = Integer.parseInt(
-                java.time.LocalDate.now().minusDays(1)
-                    .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
+                    java.time.LocalDate.now().minusDays(1)
+                            .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
             );
         }
-        
+
         // 留存天数：1、7、15、30、180天
         Integer[] days = {1, CommonConstant.DEFAULT_SEARCH_TREND_DAYS, 15, 30, 180};
         Map<Integer, Double> retentionMap = accessUserDetailService.calculateRetentionRate(baseDate, days);
-        
+
         return Result.ok(retentionMap);
     }
 
@@ -54,7 +54,7 @@ public class AccessUserDetailController {
     @GetMapping("/location-stats")
     public Result getLocationStats(
             @RequestParam(defaultValue = "30") Integer days) {
-        
+
         List<LocationStatDTO> stats = accessUserDetailService.getLocationStatistics(days);
         return Result.ok(stats);
     }

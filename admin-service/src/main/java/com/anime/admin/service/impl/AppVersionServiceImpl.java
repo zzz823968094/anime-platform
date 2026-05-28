@@ -102,7 +102,7 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
     @Override
     public Map<String, Object> uploadFile(MultipartFile file) throws Exception {
         log.info("开始上传文件: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
-        
+
         if (file == null || file.isEmpty()) {
             throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "文件不能为空");
         }
@@ -112,7 +112,7 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
         if (originalFilename == null) {
             throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "文件名不能为空");
         }
-        
+
         String extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
         if (!(extension.equals(".apk") || extension.equals(".ipa") || extension.equals(".exe") || extension.equals(".dmg"))) {
             throw new BusinessException(CommonConstant.HTTP_STATUS_PARAM_ERROR, "只支持上传 .apk, .ipa, .exe, .dmg 格式的文件");
@@ -121,7 +121,7 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
         // 生成唯一文件名
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String uniqueFilename = UUID.randomUUID().toString().replace("-", "") + "_" + timestamp + extension;
-        
+
         // 创建上传目录
         Path uploadDir = Paths.get(uploadPath);
         log.info("上传目录: {}", uploadDir.toAbsolutePath());
@@ -174,7 +174,7 @@ public class AppVersionServiceImpl extends ServiceImpl<AppVersionMapper, AppVers
         result.put("size", file.getSize());
         result.put("extension", extension);
         result.put("uploadTime", LocalDateTime.now().toString());
-        
+
         return result;
     }
 }

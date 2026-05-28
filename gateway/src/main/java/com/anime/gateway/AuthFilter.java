@@ -30,9 +30,6 @@ import java.util.List;
 @Component
 public class AuthFilter implements GlobalFilter, Ordered {
 
-    @Resource
-    private SystemUpdateService systemUpdateService;
-
     private static final List<String> WHITE_LIST = List.of(
             "/api/danmaku/*",
             "/api/user/list",
@@ -56,6 +53,8 @@ public class AuthFilter implements GlobalFilter, Ordered {
             // 系统管理接口（管理端专用，维护模式下也可访问）
             "/api/admin/system/"
     );
+    @Resource
+    private SystemUpdateService systemUpdateService;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -133,11 +132,11 @@ public class AuthFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.OK); // HTTP状态码200，但业务code为999
         response.getHeaders().add("Content-Type", "application/json;charset=UTF-8");
-        
+
         String message = systemUpdateService.getUpdateMessage();
         String json = "{\"code\":" + CommonConstant.GATEWAY_MAINTENANCE_CODE + ",\"message\":\"" + message + "\",\"data\":null}";
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
-        
+
         return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
     }
 

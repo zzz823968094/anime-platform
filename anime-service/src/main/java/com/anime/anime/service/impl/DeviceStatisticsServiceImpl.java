@@ -26,47 +26,46 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DeviceStatisticsServiceImpl extends ServiceImpl<DeviceStatisticsMapper, DeviceStatistics> implements DeviceStatisticsService {
 
-    private final StringRedisTemplate redisTemplate;
-    private final DeviceStatisticsMapper deviceStatisticsMapper;
-
     private static final String REDIS_KEY_PREFIX = "device:";
     private static final String REDIS_KEY_SUFFIX = ":devices";
+    private final StringRedisTemplate redisTemplate;
+    private final DeviceStatisticsMapper deviceStatisticsMapper;
 
     /**
      * 记录设备信息到Redis
      *
-     * @param ip         客户端IP
+     * @param ip          客户端IP
      * @param deviceModel 设备型号
-     * @param os         操作系统
+     * @param os          操作系统
      */
     @Override
     public void recordDevice(String ip, String deviceModel, String os) {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             return;
         }
-        
+
         // 设置默认值
         deviceModel = deviceModel == null || deviceModel.isEmpty() ? "Unknown" : deviceModel;
         os = os == null || os.isEmpty() ? "Unknown" : os;
-        
+
         try {
             // 获取当前日期作为Key
             String dateKey = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
             String redisKey = REDIS_KEY_PREFIX + dateKey + REDIS_KEY_SUFFIX;
-            
+
             // 构建设备信息JSON
             JSONObject deviceInfo = new JSONObject();
             deviceInfo.set("ip", ip);
             deviceInfo.set("deviceModel", deviceModel);
             deviceInfo.set("os", os);
-            
+
             // 将设备信息添加到Redis Hash中（按设备型号+系统分组）
             String deviceKey = deviceModel + "|" + os;
             redisTemplate.opsForHash().put(redisKey, deviceKey + ":" + ip, JSONUtil.toJsonStr(deviceInfo));
-            
+
             // 设置过期时间为3天（防止Redis数据堆积）
             redisTemplate.expire(redisKey, java.time.Duration.ofDays(3));
-            
+
             log.debug("记录设备信息: {} -> {}|{}", dateKey, deviceModel, os);
         } catch (Exception e) {
             log.error("记录设备信息失败: {}|{}|{}", ip, deviceModel, os, e);
@@ -84,18 +83,18 @@ public class DeviceStatisticsServiceImpl extends ServiceImpl<DeviceStatisticsMap
             String yesterday = LocalDate.now().minusDays(1)
                     .format(DateTimeFormatter.BASIC_ISO_DATE);
             String redisKey = REDIS_KEY_PREFIX + yesterday + REDIS_KEY_SUFFIX;
-            
+
             // 从Redis中获取所有设备信息
             Map<Object, Object> deviceMap = redisTemplate.opsForHash().entries(redisKey);
-            
+
             if (deviceMap == null || deviceMap.isEmpty()) {
                 log.info("昨天没有设备数据需要聚合");
                 return;
             }
-            
+
             // 按设备型号+系统分组统计
             Map<String, List<String>> deviceIpMap = new HashMap<>();
-            
+
             for (Map.Entry<Object, Object> entry : deviceMap.entrySet()) {
                 String value = (String) entry.getValue();
                 if (value != null) {
@@ -104,7 +103,7 @@ public class DeviceStatisticsServiceImpl extends ServiceImpl<DeviceStatisticsMap
                         String ip = deviceInfo.getStr("ip");
                         String deviceModel = deviceInfo.getStr("deviceModel");
                         String os = deviceInfo.getStr("os");
-                        
+
                         String deviceKey = deviceModel + "|" + os;
                         deviceIpMap.computeIfAbsent(deviceKey, k -> new ArrayList<>()).add(ip);
                     } catch (Exception e) {
@@ -112,19 +111,19 @@ public class DeviceStatisticsServiceImpl extends ServiceImpl<DeviceStatisticsMap
                     }
                 }
             }
-            
+
             Integer dateInt = Integer.parseInt(yesterday);
-            
+
             // 遍历每个设备型号，插入或更新数据库
             for (Map.Entry<String, List<String>> entry : deviceIpMap.entrySet()) {
                 String[] parts = entry.getKey().split("\\|");
                 String deviceModel = parts.length > 0 ? parts[0] : "Unknown";
                 String os = parts.length > 1 ? parts[1] : "Unknown";
-                
+
                 // 去重IP
                 Set<String> uniqueIps = new HashSet<>(entry.getValue());
                 int userCount = uniqueIps.size();
-                
+
                 // 检查是否已存在该日期和设备型号的记录
                 DeviceStatistics existing = deviceStatisticsMapper.selectOne(
                         new LambdaQueryWrapper<DeviceStatistics>()
@@ -132,17 +131,17 @@ public class DeviceStatisticsServiceImpl extends ServiceImpl<DeviceStatisticsMap
                                 .eq(DeviceStatistics::getDeviceModel, deviceModel)
                                 .eq(DeviceStatistics::getOs, os)
                 );
-                
+
                 JSONObject object = new JSONObject();
                 object.set("ips", uniqueIps);
                 String ips = JSONUtil.toJsonStr(object);
-                
+
                 if (existing != null) {
                     // 更新现有记录
                     existing.setUserCount(userCount);
                     existing.setIp(ips);
                     deviceStatisticsMapper.updateById(existing);
-                    log.info("更新设备数据: date={}, deviceModel={}, os={}, userCount={}", 
+                    log.info("更新设备数据: date={}, deviceModel={}, os={}, userCount={}",
                             yesterday, deviceModel, os, userCount);
                 } else {
                     // 插入新记录
@@ -153,11 +152,11 @@ public class DeviceStatisticsServiceImpl extends ServiceImpl<DeviceStatisticsMap
                     deviceStatistics.setUserCount(userCount);
                     deviceStatistics.setIp(ips);
                     deviceStatisticsMapper.insert(deviceStatistics);
-                    log.info("新增设备数据: date={}, deviceModel={}, os={}, userCount={}", 
+                    log.info("新增设备数据: date={}, deviceModel={}, os={}, userCount={}",
                             yesterday, deviceModel, os, userCount);
                 }
             }
-            
+
             log.info("设备数据聚合任务执行完成，共处理 {} 种设备类型", deviceIpMap.size());
         } catch (Exception e) {
             log.error("设备数据聚合任务执行失败", e);

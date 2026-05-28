@@ -16,24 +16,24 @@ public class CronTask implements Serializable {
     @TableId(type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
-    
+
     private String taskName;
-    
+
     private Integer taskType;
 
     private Integer hour;
-    
+
     private String cronExpression;
-    
+
     private Boolean enabled;
-    
+
     private String status;
-    
+
     private Date lastExecuteTime;
-    
+
     private Date nextExecuteTime;
-    
+
     private Date createdAt;
-    
+
     private Date updatedAt;
 }

@@ -41,14 +41,14 @@ public class VideoController {
     @GetMapping("/anime/{animeId}")
     public Result<List<Video>> listByAnime(@PathVariable("animeId") Long animeId) {
         log.info("获取动漫视频列表，animeId: {}", animeId);
-        
+
         List<Video> list = videoMapper.selectList(
                 new LambdaQueryWrapper<Video>()
                         .eq(Video::getAnimeId, animeId)
                         .eq(Video::getStatus, CommonConstant.ANIME_STATUS_PUBLISHED)
                         .orderByAsc(Video::getEpisode)
         );
-        
+
         log.info("获取动漫视频列表完成，animeId: {}, count: {}", animeId, list.size());
         return Result.ok(list);
     }
@@ -62,7 +62,7 @@ public class VideoController {
     @GetMapping("/{videoId}")
     public Result<Video> getVideo(@PathVariable("videoId") Long videoId) {
         log.info("获取视频详情，videoId: {}", videoId);
-        
+
         Video video = videoMapper.selectById(videoId);
         if (video == null) {
             log.warn("视频不存在，videoId: {}", videoId);
@@ -70,7 +70,7 @@ public class VideoController {
         }
 
         // video 播放量 +1
-        video.setViewCount(video.getViewCount()==null? 0:video.getViewCount() + 1);
+        video.setViewCount(video.getViewCount() == null ? 0 : video.getViewCount() + 1);
         videoMapper.updateById(video);
 
         // anime 播放量原子自增（直接 SQL，避免并发问题）

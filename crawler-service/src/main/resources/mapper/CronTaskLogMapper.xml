@@ -4,7 +4,8 @@
 
     <!-- 删除超过指定小时数的任务日志 -->
     <delete id="deleteLogsOlderThanHours">
-        DELETE FROM cron_task_log 
+        DELETE
+        FROM cron_task_log
         WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{hours} HOUR)
     </delete>
 

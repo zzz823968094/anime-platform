@@ -17,28 +17,28 @@ public class Video implements Serializable {
 
     @TableId(type = IdType.AUTO)
     private Long id;
-    
+
     @JsonProperty("anime_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long animeId;
-    
+
     private Integer episode;
-    
+
     private String title;
-    
+
     @JsonProperty("m3u8_url")
     private String m3u8Url;
-    
+
     private Integer duration;
-    
+
     @JsonProperty("view_count")
     private Integer viewCount;
-    
+
     private Integer status;
-    
+
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
-    
+
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
 }

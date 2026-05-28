@@ -23,9 +23,9 @@ public class WatchHistoryServiceImpl extends ServiceImpl<WatchHistoryMapper, Wat
     public void saveOrUpdateHistory(WatchHistorySaveRequest request) {
         // 查询是否已存在该番剧的观看历史
         WatchHistory existing = baseMapper.selectByUserIdAndAnimeId(request.getUserId(), request.getAnimeId());
-        
+
         LocalDateTime now = LocalDateTime.now();
-        
+
         if (existing != null) {
             // 更新现有记录
             existing.setAnimeId(request.getAnimeId());
@@ -50,7 +50,7 @@ public class WatchHistoryServiceImpl extends ServiceImpl<WatchHistoryMapper, Wat
         } else {
             // 创建新记录
             WatchHistory history = new WatchHistory();
-            BeanUtils.copyProperties(request,history);
+            BeanUtils.copyProperties(request, history);
             history.setAnimeId(request.getAnimeId());
             history.setProgress(request.getProgress() != null ? request.getProgress() : 0.0);
             history.setWatchDuration(request.getWatchDuration() != null ? request.getWatchDuration() : 0);

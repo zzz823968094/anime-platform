@@ -33,10 +33,10 @@ public class CacheUtil {
      * 获取缓存，如果缓存不存在则从数据库加载并缓存
      * 防止缓存穿透
      *
-     * @param key       缓存键
-     * @param supplier  数据加载器
-     * @param expire    过期时间（秒）
-     * @param <T>       数据类型
+     * @param key      缓存键
+     * @param supplier 数据加载器
+     * @param expire   过期时间（秒）
+     * @param <T>      数据类型
      * @return 缓存数据
      */
     @SuppressWarnings("unchecked")

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class CarouselController {
 
     private final CarouselService carouselService;
+
     @GetMapping("/list")
     public Result list(
             @RequestParam(defaultValue = "1") Integer pageNum,
@@ -30,6 +31,7 @@ public class CarouselController {
         carouselService.page(page, wrapper);
         return Result.ok(page);
     }
+
     @GetMapping("/{id}")
     public Result getById(@PathVariable Long id) {
         Carousel carousel = carouselService.getById(id);

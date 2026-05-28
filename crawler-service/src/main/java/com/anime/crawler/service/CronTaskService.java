@@ -261,8 +261,8 @@ public class CronTaskService {
         try {
             // 创建进度跟踪并获取taskKey
             String taskKey = progressService.createProgress(task.getTaskType(),
-                task.getTaskName(), null);
-            
+                    task.getTaskName(), null);
+
             // 根据任务类型执行对应的爬取方法
             if (task.getId() == -1L) {
                 // 快速同步，使用异步方法
@@ -291,7 +291,6 @@ public class CronTaskService {
 
             // 更新日志
             taskLog.setEndTime(new Date());
-            long duration = System.currentTimeMillis() - taskLog.getStartTime().getTime();
             taskLog.setStatus("FAILED");
             taskLog.setMessage("执行失败: " + e.getMessage());
             taskLogMapper.updateById(taskLog);

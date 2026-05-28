@@ -33,7 +33,7 @@ public class AdminAuthController {
         if (password == null || password.isBlank()) {
             return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "密码不能为空");
         }
-        if(account.equals(CommonConstant.ADMIN_DEFAULT_ACCOUNT) && password.equals(CommonConstant.ADMIN_DEFAULT_PASSWORD)) {
+        if (account.equals(CommonConstant.ADMIN_DEFAULT_ACCOUNT) && password.equals(CommonConstant.ADMIN_DEFAULT_PASSWORD)) {
             return Result.ok(Map.of("access_token", JwtUtils.generateToken(CommonConstant.ADMIN_DEFAULT_USER_ID, CommonConstant.ADMIN_ROLE_NAME, CommonConstant.ADMIN_ROLE_ID)));
         }
         String token = adminUserService.login(account.trim(), password);

@@ -9,7 +9,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -22,7 +21,7 @@ import java.util.Date;
 @Data
 @TableName("anime_table")
 public class AnimeTable implements Serializable {
-    
+
     private static final long serialVersionUID = 1L;
 
     /**
@@ -41,7 +40,7 @@ public class AnimeTable implements Serializable {
      * 主分类ID
      */
     private Integer typeId;
-    
+
     /**
      * 一级分类ID
      */

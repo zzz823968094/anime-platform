@@ -12,7 +12,7 @@
 
     <!-- 查询总访问人数（所有日期的累加） -->
     <select id="getTotalUserCount" resultType="java.lang.Long">
-        SELECT SUM(web_user_count + app_user_count) AS total_user_count 
+        SELECT SUM(web_user_count + app_user_count) AS total_user_count
         FROM access_data
     </select>
 

@@ -18,7 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableFeignClients
 @EnableScheduling
 public class AnimeApplication {
-    
+
     /**
      * 主方法，启动应用
      *

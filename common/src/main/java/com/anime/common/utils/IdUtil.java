@@ -1,13 +1,13 @@
 package com.anime.common.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.net.NetworkInterface;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 高性能分布式ID生成器
@@ -24,40 +24,26 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class IdUtil {
 
-    /**
-     * 私有构造函数，防止实例化
-     */
-    private IdUtil() {
-        throw new IllegalStateException("Utility class");
-    }
-
     // 时间戳起始点（2024-01-01 00:00:00）
     private static final long START_TIMESTAMP = 1704067200000L;
-
     // 各部分占用的位数
     private static final long TIMESTAMP_BITS = 41L;  // 41位时间戳，可用69年
     private static final long NODE_BITS = 10L;      // 10位节点ID，支持1024个节点
     private static final long SEQUENCE_BITS = 12L;  // 12位序列号，每毫秒4096个ID
-
     // 最大值
     private static final long MAX_NODE_ID = ~(-1L << NODE_BITS);
     private static final long MAX_SEQUENCE = ~(-1L << SEQUENCE_BITS);
-
     // 移位偏移量
     private static final long TIMESTAMP_LEFT_SHIFT = NODE_BITS + SEQUENCE_BITS;
     private static final long NODE_LEFT_SHIFT = SEQUENCE_BITS;
-
     // 节点ID（0-1023）
     private static final long NODE_ID;
-
     // 序列号（每毫秒递增）
     private static final AtomicLong SEQUENCE = new AtomicLong(0);
-
-    // 上次生成ID的时间戳
-    private static volatile long lastTimestamp = -1L;
-
     // 用于保证线程安全的锁
     private static final ReentrantLock LOCK = new ReentrantLock();
+    // 上次生成ID的时间戳
+    private static volatile long lastTimestamp = -1L;
 
     static {
         // 初始化节点ID（优先从环境变量获取，否则从MAC地址生成）
@@ -69,6 +55,13 @@ public class IdUtil {
             nodeId = new SecureRandom().nextInt((int) MAX_NODE_ID + 1);
         }
         NODE_ID = nodeId;
+    }
+
+    /**
+     * 私有构造函数，防止实例化
+     */
+    private IdUtil() {
+        throw new IllegalStateException("Utility class");
     }
 
     /**

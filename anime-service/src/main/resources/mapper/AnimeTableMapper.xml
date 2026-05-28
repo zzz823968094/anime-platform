@@ -4,12 +4,14 @@
 
     <!-- 统计总播放量(使用MySQL SUM函数) -->
     <select id="sumTotalViewCount" resultType="java.lang.Long">
-        SELECT COALESCE(SUM(vod_hits), 0) FROM anime_table
+        SELECT COALESCE(SUM(vod_hits), 0)
+        FROM anime_table
     </select>
 
     <!-- 统计今日播放量(使用MySQL SUM函数) -->
     <select id="sumTodayViewCount" resultType="java.lang.Long">
-        SELECT COALESCE(SUM(vod_hits_day), 0) FROM anime_table
+        SELECT COALESCE(SUM(vod_hits_day), 0)
+        FROM anime_table
     </select>
 
 </mapper>

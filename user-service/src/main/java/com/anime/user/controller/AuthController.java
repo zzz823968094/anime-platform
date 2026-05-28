@@ -1,8 +1,6 @@
 package com.anime.user.controller;
 
 import com.anime.common.constant.CommonConstant;
-import com.anime.common.constant.RedisConstant;
-import com.anime.common.enums.ResultCodeEnum;
 import com.anime.common.exception.BusinessException;
 import com.anime.common.result.Result;
 import com.anime.user.entity.dto.UserLoginDTO;
@@ -12,13 +10,11 @@ import com.anime.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 认证控制器

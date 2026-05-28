@@ -20,7 +20,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @TableName("ad")
 public class Ad extends BaseEntity {
-    
+
     /**
      * 主键ID
      */

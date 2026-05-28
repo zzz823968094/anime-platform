@@ -5,41 +5,43 @@
     <!-- 批量插入视频数据,忽略重复记录 -->
     <insert id="insertBatchIgnore">
         INSERT IGNORE INTO video (
-            id, anime_id, episode, title, m3u8_url, duration,
-            view_count, status, created_at, updated_at
+        id, anime_id, episode, title, m3u8_url, duration,
+        view_count, status, created_at, updated_at
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
-                #{item.id}, #{item.animeId}, #{item.episode}, #{item.title},
-                #{item.m3u8Url}, #{item.duration}, #{item.viewCount},
-                #{item.status}, #{item.createdAt}, #{item.updatedAt}
+            #{item.id}, #{item.animeId}, #{item.episode}, #{item.title},
+            #{item.m3u8Url}, #{item.duration}, #{item.viewCount},
+            #{item.status}, #{item.createdAt}, #{item.updatedAt}
             )
         </foreach>
     </insert>
 
     <!-- 统计指定动漫的视频集数 -->
     <select id="countByAnimeId" resultType="int">
-        SELECT COUNT(*) FROM video WHERE anime_id = #{animeId}
+        SELECT COUNT(*)
+        FROM video
+        WHERE anime_id = #{animeId}
     </select>
 
     <!-- 批量插入或更新视频数据（根据anime_id和episode唯一索引） -->
     <insert id="insertBatchOrUpdate">
         INSERT INTO video (
-            id, anime_id, episode, title, m3u8_url, duration,
-            view_count, status, created_at, updated_at
+        id, anime_id, episode, title, m3u8_url, duration,
+        view_count, status, created_at, updated_at
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
-                #{item.id}, #{item.animeId}, #{item.episode}, #{item.title},
-                #{item.m3u8Url}, #{item.duration}, #{item.viewCount},
-                #{item.status}, #{item.createdAt}, #{item.updatedAt}
+            #{item.id}, #{item.animeId}, #{item.episode}, #{item.title},
+            #{item.m3u8Url}, #{item.duration}, #{item.viewCount},
+            #{item.status}, #{item.createdAt}, #{item.updatedAt}
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
-            title = VALUES(title),
-            m3u8_url = VALUES(m3u8_url),
-            duration = VALUES(duration),
-            updated_at = NOW()
+        title = VALUES(title),
+        m3u8_url = VALUES(m3u8_url),
+        duration = VALUES(duration),
+        updated_at = NOW()
     </insert>
 
 

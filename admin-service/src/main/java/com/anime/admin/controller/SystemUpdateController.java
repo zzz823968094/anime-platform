@@ -47,19 +47,19 @@ public class SystemUpdateController {
     public static class UpdateStatusRequest {
         private boolean updating;
         private String message;
-        
+
         public boolean isUpdating() {
             return updating;
         }
-        
+
         public void setUpdating(boolean updating) {
             this.updating = updating;
         }
-        
+
         public String getMessage() {
             return message;
         }
-        
+
         public void setMessage(String message) {
             this.message = message;
         }

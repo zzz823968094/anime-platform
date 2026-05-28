@@ -48,7 +48,7 @@ public class AdController {
             @RequestParam(required = false) String positionCode,
             @RequestParam(required = false) String status) {
         log.info("分页查询广告列表，current: {}, size: {}", current, size);
-        
+
         // 将字符串状态转换为整数
         Integer statusInt = null;
         if (status != null && !status.isEmpty()) {
@@ -65,7 +65,7 @@ public class AdController {
                 }
             }
         }
-        
+
         Page<Ad> page = adService.pageAds(current, size, positionCode, statusInt);
         log.info("分页查询广告列表完成，total: {}", page.getTotal());
         return Result.ok(page);

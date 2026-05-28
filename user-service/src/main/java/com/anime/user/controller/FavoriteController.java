@@ -21,10 +21,12 @@ public class FavoriteController {
     private final UserFavoriteMapper favoriteMapper;
     private final AnimeTableService animeTableService;
 
-    /** 收藏番剧 */
+    /**
+     * 收藏番剧
+     */
     @PostMapping("/{animeId}")
     public Result add(@PathVariable("animeId") Long animeId,
-                         @RequestHeader("X-User-Id") Long userId) {
+                      @RequestHeader("X-User-Id") Long userId) {
         // 检查是否已收藏
         Long count = favoriteMapper.selectCount(
                 new LambdaQueryWrapper<UserFavorite>()
@@ -41,10 +43,12 @@ public class FavoriteController {
         return Result.ok("收藏成功");
     }
 
-    /** 取消收藏 */
+    /**
+     * 取消收藏
+     */
     @DeleteMapping("/{animeId}")
     public Result remove(@PathVariable("animeId") Long animeId,
-                            @RequestHeader("X-User-Id") Long userId) {
+                         @RequestHeader("X-User-Id") Long userId) {
         favoriteMapper.delete(
                 new LambdaQueryWrapper<UserFavorite>()
                         .eq(UserFavorite::getUserId, userId)
@@ -53,7 +57,9 @@ public class FavoriteController {
         return Result.ok("已取消收藏");
     }
 
-    /** 获取收藏列表（返回 animeId 列表） */
+    /**
+     * 获取收藏列表（返回 animeId 列表）
+     */
     @GetMapping("/list")
     public Result list(@RequestHeader("X-User-Id") Long userId) {
         List<UserFavorite> favs = favoriteMapper.selectList(
@@ -67,10 +73,12 @@ public class FavoriteController {
         return Result.ok(animeTables);
     }
 
-    /** 检查是否已收藏 */
+    /**
+     * 检查是否已收藏
+     */
     @GetMapping("/{animeId}/check")
     public Result check(@PathVariable("animeId") Long animeId,
-                           @RequestHeader("X-User-Id") Long userId) {
+                        @RequestHeader("X-User-Id") Long userId) {
         Long count = favoriteMapper.selectCount(
                 new LambdaQueryWrapper<UserFavorite>()
                         .eq(UserFavorite::getUserId, userId)

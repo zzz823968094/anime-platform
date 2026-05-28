@@ -12,11 +12,11 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 
 @Service
-    public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTable> implements AnimeTableService {
+public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTable> implements AnimeTableService {
 
     @Override
     public Page<AnimeTable> listAnime(int page, int size, String type, Integer status,
-                                 Integer year, String genre, String sort, String keyword) {
+                                      Integer year, String genre, String sort, String keyword) {
         LambdaQueryWrapper<AnimeTable> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(AnimeTable::getVodName, keyword));
@@ -35,7 +35,7 @@ import java.util.List;
     @Override
     public Page<AnimeTable> search(String keyword, int page, int size) {
         LambdaQueryWrapper<AnimeTable> wrapper = new LambdaQueryWrapper<>();
-        if(null != keyword){
+        if (null != keyword) {
             wrapper.and(w -> w.like(AnimeTable::getVodName, keyword));
         }
         wrapper.orderByDesc(AnimeTable::getUpdateAt);

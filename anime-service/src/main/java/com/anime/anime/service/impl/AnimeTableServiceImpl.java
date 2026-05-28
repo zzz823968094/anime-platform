@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -26,9 +25,9 @@ public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTa
 
     @Override
     public Page<AnimeTable> listAnime(int page, int size, String type, Integer status,
-                                 Integer year, String genre, String sort, String keyword) {
+                                      Integer year, String genre, String sort, String keyword) {
         log.info("分页查询动漫列表，page: {}, size: {}, keyword: {}", page, size, keyword);
-        
+
         LambdaQueryWrapper<AnimeTable> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(AnimeTable::getVodName, keyword));
@@ -41,7 +40,7 @@ public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTa
         } else {
             wrapper.orderByDesc(AnimeTable::getUpdateAt);
         }
-        
+
         Page<AnimeTable> result = baseMapper.selectPage(new Page<>(page, size), wrapper);
         log.info("分页查询动漫列表完成，total: {}", result.getTotal());
         return result;
@@ -50,13 +49,13 @@ public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTa
     @Override
     public Page<AnimeTable> search(String keyword, int page, int size) {
         log.info("搜索动漫，keyword: {}, page: {}, size: {}", keyword, page, size);
-        
+
         LambdaQueryWrapper<AnimeTable> wrapper = new LambdaQueryWrapper<>();
-        if(null != keyword){
+        if (null != keyword) {
             wrapper.and(w -> w.like(AnimeTable::getVodName, keyword));
         }
         wrapper.orderByDesc(AnimeTable::getUpdateAt);
-        
+
         Page<AnimeTable> result = baseMapper.selectPage(new Page<>(page, size), wrapper);
         log.info("搜索动漫完成，total: {}", result.getTotal());
         return result;
@@ -65,7 +64,7 @@ public class AnimeTableServiceImpl extends ServiceImpl<AnimeTableMapper, AnimeTa
     @Override
     public List<AnimeTable> getHotRecommend(int count) {
         log.info("获取热门推荐，count: {}", count);
-        
+
         // 检查是否有真实播放量数据
         long hasView = lambdaQuery()
                 .gt(AnimeTable::getVodHits, 0)

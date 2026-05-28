@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/crawler/progress")
 @RequiredArgsConstructor
 public class CrawlerProgressController {
-    
+
     private final CrawlerProgressService progressService;
-    
+
     /**
      * 查询指定任务的进度
      */
@@ -29,7 +29,7 @@ public class CrawlerProgressController {
         }
         return Result.ok(progress);
     }
-    
+
     /**
      * 获取最近的任务列表
      */
@@ -41,7 +41,7 @@ public class CrawlerProgressController {
         }
         return Result.ok(progressService.getRecentProgress(limit));
     }
-    
+
     /**
      * 获取指定类型的运行中任务
      */
@@ -53,7 +53,7 @@ public class CrawlerProgressController {
         }
         return Result.ok(progress);
     }
-    
+
     /**
      * 清理过期的进度记录
      */

@@ -30,23 +30,22 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessData> implements AccessDataService {
 
-    private final StringRedisTemplate redisTemplate;
-    private final AccessDataMapper accessDataMapper;
-    private final AccessUserDetailService accessUserDetailService;
-
     private static final String REDIS_KEY_PREFIX = "access:";
     private static final String REDIS_KEY_SUFFIX = ":ips";
     private static final String APP_REDIS_KEY_SUFFIX = ":app:ips";
     private static final String WEB_REDIS_KEY_SUFFIX = ":web:ips";
+    private final StringRedisTemplate redisTemplate;
+    private final AccessDataMapper accessDataMapper;
+    private final AccessUserDetailService accessUserDetailService;
 
     /**
      * 记录访问（包含用户ID）
      *
-     * @param ip     客户端IP
-     * @param sign   访问标识：app/web
+     * @param ip   客户端IP
+     * @param sign 访问标识：app/web
      */
     @Override
-    public void recordAccess( String ip, String sign) {
+    public void recordAccess(String ip, String sign) {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             return;
         }
@@ -61,7 +60,7 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
             redisTemplate.expire(redisKey, java.time.Duration.ofDays(3));
             log.debug("记录访问:  ip={}, sign={}", ip, sign);
         } catch (Exception e) {
-            log.error("记录访问失败:  ip={}, sign={}",  ip, sign, e);
+            log.error("记录访问失败:  ip={}, sign={}", ip, sign, e);
         }
     }
 
@@ -185,7 +184,7 @@ public class AccessDataServiceImpl extends ServiceImpl<AccessDataMapper, AccessD
         accessData.setAppUserCount(todayAppRealTimeUserCount);
         String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
         accessData.setDate(Integer.parseInt(today));
-        if(accessTrend == null || accessTrend.isEmpty()){
+        if (accessTrend == null || accessTrend.isEmpty()) {
             accessTrend = new ArrayList<>();
         }
         accessTrend.add(accessData);

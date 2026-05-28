@@ -1,6 +1,5 @@
 package com.anime.common.result;
 
-import com.anime.common.constant.CommonConstant;
 import com.anime.common.enums.ResultCodeEnum;
 import lombok.Data;
 

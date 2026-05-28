@@ -16,7 +16,7 @@ import java.util.List;
  */
 @Mapper
 public interface AnimeTableMapper extends BaseMapper<AnimeTable> {
-    
+
     /**
      * 批量插入动漫数据，忽略重复记录
      *
@@ -48,7 +48,7 @@ public interface AnimeTableMapper extends BaseMapper<AnimeTable> {
      * @return 更新数量
      */
     int updateBatchById(@Param("list") List<AnimeTable> list);
-    
+
     /**
      * 清除所有视频的日播放量
      *

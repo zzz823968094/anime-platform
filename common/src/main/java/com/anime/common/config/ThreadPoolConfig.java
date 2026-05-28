@@ -52,37 +52,37 @@ public class ThreadPoolConfig {
     @Bean("businessTaskExecutor")
     public ThreadPoolTaskExecutor businessTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        
+
         // 核心线程数
         executor.setCorePoolSize(CORE_POOL_SIZE);
-        
+
         // 最大线程数
         executor.setMaxPoolSize(MAX_POOL_SIZE);
-        
+
         // 队列容量
         executor.setQueueCapacity(QUEUE_CAPACITY);
-        
+
         // 线程空闲时间
         executor.setKeepAliveSeconds(KEEP_ALIVE_SECONDS);
-        
+
         // 线程名称前缀
         executor.setThreadNamePrefix(THREAD_NAME_PREFIX);
-        
+
         // 拒绝策略：由调用线程处理（CallerRunsPolicy）
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        
+
         // 等待所有任务结束后再关闭线程池
         executor.setWaitForTasksToCompleteOnShutdown(true);
-        
+
         // 等待时间（秒）
         executor.setAwaitTerminationSeconds(60);
-        
+
         // 初始化
         executor.initialize();
-        
-        log.info("业务线程池初始化完成，核心线程数: {}, 最大线程数: {}, 队列容量: {}", 
+
+        log.info("业务线程池初始化完成，核心线程数: {}, 最大线程数: {}, 队列容量: {}",
                 CORE_POOL_SIZE, MAX_POOL_SIZE, QUEUE_CAPACITY);
-        
+
         return executor;
     }
 
@@ -95,36 +95,36 @@ public class ThreadPoolConfig {
     @Bean("asyncTaskExecutor")
     public ThreadPoolTaskExecutor asyncTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        
+
         // 核心线程数
         executor.setCorePoolSize(5);
-        
+
         // 最大线程数
         executor.setMaxPoolSize(10);
-        
+
         // 队列容量
         executor.setQueueCapacity(100);
-        
+
         // 线程空闲时间
         executor.setKeepAliveSeconds(30);
-        
+
         // 线程名称前缀
         executor.setThreadNamePrefix("anime-async-");
-        
+
         // 拒绝策略：丢弃最老的任务
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardOldestPolicy());
-        
+
         // 等待所有任务结束后再关闭线程池
         executor.setWaitForTasksToCompleteOnShutdown(true);
-        
+
         // 等待时间（秒）
         executor.setAwaitTerminationSeconds(30);
-        
+
         // 初始化
         executor.initialize();
-        
+
         log.info("异步线程池初始化完成");
-        
+
         return executor;
     }
 }

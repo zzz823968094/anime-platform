@@ -43,10 +43,10 @@ public class PageUtil {
     /**
      * 将MyBatis-Plus的IPage转换为PageResult（带数据转换）
      *
-     * @param page     MyBatis-Plus分页对象
+     * @param page      MyBatis-Plus分页对象
      * @param converter 数据转换器
-     * @param <T>      源数据类型
-     * @param <R>      目标数据类型
+     * @param <T>       源数据类型
+     * @param <R>       目标数据类型
      * @return 分页结果
      */
     public static <T, R> PageResult<R> toPageResult(IPage<T> page, java.util.function.Function<T, R> converter) {

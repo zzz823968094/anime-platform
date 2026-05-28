@@ -21,7 +21,7 @@ public class AdPositionServiceImpl extends ServiceImpl<AdPositionMapper, AdPosit
     public List<AdPosition> getAllActivePositions() {
         LambdaQueryWrapper<AdPosition> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AdPosition::getStatus, 1)
-               .orderByAsc(AdPosition::getSortOrder);
+                .orderByAsc(AdPosition::getSortOrder);
         return this.list(wrapper);
     }
 
@@ -42,7 +42,7 @@ public class AdPositionServiceImpl extends ServiceImpl<AdPositionMapper, AdPosit
             log.warn("广告位不存在，id: {}", id);
             return false;
         }
-        
+
         BeanUtils.copyProperties(positionDTO, position);
         position.setId(id);
         return this.updateById(position);

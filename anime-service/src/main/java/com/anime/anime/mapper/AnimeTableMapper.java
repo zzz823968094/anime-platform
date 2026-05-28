@@ -10,6 +10,7 @@ public interface AnimeTableMapper extends BaseMapper<AnimeTable> {
      * 统计总播放量(使用MySQL SUM函数)
      */
     Long sumTotalViewCount();
+
     /**
      * 统计今日播放量(使用MySQL SUM函数)
      */

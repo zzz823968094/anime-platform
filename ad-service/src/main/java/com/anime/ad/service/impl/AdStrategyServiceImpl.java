@@ -18,7 +18,7 @@ public class AdStrategyServiceImpl extends ServiceImpl<AdStrategyMapper, AdStrat
     public List<AdStrategy> getStrategiesByAdId(Long adId) {
         LambdaQueryWrapper<AdStrategy> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AdStrategy::getAdId, adId)
-               .eq(AdStrategy::getStatus, 1);
+                .eq(AdStrategy::getStatus, 1);
         return this.list(wrapper);
     }
 

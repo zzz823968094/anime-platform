@@ -25,7 +25,7 @@ public class AnimeTable implements Serializable {
 
     @JsonProperty("type_id")
     private Integer typeId;
-    
+
     @TableField("type_id_1")// 主分类ID
     @JsonProperty("type_id_1")
     private Integer typeId1;                // 一级分类ID
@@ -266,7 +266,7 @@ public class AnimeTable implements Serializable {
 
     @JsonProperty("type_name")
     private String typeName;                // 分类名称（冗余字段，便于直接展示）
-    
+
     @TableField(exist = false)
     private java.util.Date updatedAt;       // 更新时间（非数据库字段，用于标记记录更新时间）
 }

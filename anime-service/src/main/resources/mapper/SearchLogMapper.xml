@@ -36,12 +36,10 @@
     </select>
     <select id="keywordListCount" resultType="java.lang.Long">
         SELECT COUNT(*) AS total
-        FROM (
-                 SELECT keyword
-                 FROM search_log
-                 WHERE created_at BETWEEN DATE_SUB(NOW(), INTERVAL #{days} DAY) AND NOW()
-                 GROUP BY keyword
-                 HAVING COUNT(*) >= 10
-             ) AS temp
+        FROM (SELECT keyword
+              FROM search_log
+              WHERE created_at BETWEEN DATE_SUB(NOW(), INTERVAL #{days} DAY) AND NOW()
+              GROUP BY keyword
+              HAVING COUNT(*) >= 10) AS temp
     </select>
 </mapper>

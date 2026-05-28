@@ -23,55 +23,53 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class CrawlerProgressService {
-    
-    private final StringRedisTemplate redisTemplate;
-    
+
     // Redis key前缀
     private static final String PROGRESS_KEY_PREFIX = "crawler:progress:";
     private static final String RECENT_TASKS_KEY = "crawler:recent_tasks";
-    
     // 过期时间：1天
     private static final long EXPIRE_DAYS = 1;
-    
+    private final StringRedisTemplate redisTemplate;
+
     /**
      * 创建新的进度跟踪记录
      */
     public String createProgress(Integer taskType, String taskName, Integer totalPages) {
         String taskKey = generateTaskKey(taskType);
-        
+
         CrawlerProgressInfo progress = new CrawlerProgressInfo(taskKey, taskType, taskName);
         progress.setTotalPages(totalPages);
-        
+
         // 存储到Redis
         String key = PROGRESS_KEY_PREFIX + taskKey;
         redisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(progress), EXPIRE_DAYS, TimeUnit.DAYS);
-        
+
         // 添加到最近任务列表（使用ZSet，按时间排序）
         double score = System.currentTimeMillis();
         redisTemplate.opsForZSet().add(RECENT_TASKS_KEY, taskKey, score);
-        
+
         // 限制最近任务列表大小，只保留最近100个
         Long size = redisTemplate.opsForZSet().size(RECENT_TASKS_KEY);
         if (size != null && size > 100) {
             redisTemplate.opsForZSet().removeRange(RECENT_TASKS_KEY, 0, size - 101);
         }
-        
+
         log.info("创建爬取任务进度跟踪: taskKey={}, taskName={}", taskKey, taskName);
-        
+
         return taskKey;
     }
-    
+
     /**
      * 更新进度 - 页面处理完成
      */
-    public void updatePageProgress(String taskKey, int currentPage, int totalPages, 
+    public void updatePageProgress(String taskKey, int currentPage, int totalPages,
                                    int itemsInPage, int successCount, int failCount) {
         CrawlerProgressInfo progress = getProgress(taskKey);
         if (progress == null) {
             log.warn("未找到任务进度记录: taskKey={}", taskKey);
             return;
         }
-        
+
         progress.setCurrentPage(currentPage);
         progress.setProcessedPages(progress.getProcessedPages() + 1);
         progress.setTotalItems(progress.getTotalItems() + itemsInPage);
@@ -79,7 +77,7 @@ public class CrawlerProgressService {
         progress.setSuccessCount(progress.getSuccessCount() + successCount);
         progress.setFailCount(progress.getFailCount() + failCount);
         progress.setTotalPages(totalPages);
-        
+
         // 计算进度百分比
         if (totalPages > 0) {
             int percent = (int) ((currentPage * 100.0) / totalPages);
@@ -88,17 +86,17 @@ public class CrawlerProgressService {
             int percent = (int) ((progress.getProcessedPages() * 100.0) / progress.getTotalPages());
             progress.setProgressPercent(Math.min(percent, 100));
         }
-        
+
         progress.setUpdateTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        
+
         // 更新到Redis
         String key = PROGRESS_KEY_PREFIX + taskKey;
         redisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(progress), EXPIRE_DAYS, TimeUnit.DAYS);
-        
-        log.debug("更新任务进度: taskKey={}, page={}/{}, progress={}%", 
-                 taskKey, currentPage, totalPages, progress.getProgressPercent());
+
+        log.debug("更新任务进度: taskKey={}, page={}/{}, progress={}%",
+                taskKey, currentPage, totalPages, progress.getProgressPercent());
     }
-    
+
     /**
      * 标记任务完成
      */
@@ -107,18 +105,18 @@ public class CrawlerProgressService {
         if (progress == null) {
             return;
         }
-        
+
         progress.setStatus("COMPLETED");
         progress.setProgressPercent(100);
         progress.setEndTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         progress.setUpdateTime(progress.getEndTime());
-        
+
         String key = PROGRESS_KEY_PREFIX + taskKey;
         redisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(progress), EXPIRE_DAYS, TimeUnit.DAYS);
-        
+
         log.info("任务已完成: taskKey={}, 总处理={}", taskKey, progress.getProcessedItems());
     }
-    
+
     /**
      * 标记任务失败
      */
@@ -127,18 +125,18 @@ public class CrawlerProgressService {
         if (progress == null) {
             return;
         }
-        
+
         progress.setStatus("FAILED");
         progress.setErrorMessage(errorMessage);
         progress.setEndTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         progress.setUpdateTime(progress.getEndTime());
-        
+
         String key = PROGRESS_KEY_PREFIX + taskKey;
         redisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(progress), EXPIRE_DAYS, TimeUnit.DAYS);
-        
+
         log.error("任务失败: taskKey={}, error={}", taskKey, errorMessage);
     }
-    
+
     /**
      * 获取任务进度
      */
@@ -146,17 +144,17 @@ public class CrawlerProgressService {
         if (StrUtil.isBlank(taskKey)) {
             return null;
         }
-        
+
         String key = PROGRESS_KEY_PREFIX + taskKey;
         String json = redisTemplate.opsForValue().get(key);
-        
+
         if (StrUtil.isBlank(json)) {
             return null;
         }
-        
+
         return JSONUtil.toBean(json, CrawlerProgressInfo.class);
     }
-    
+
     /**
      * 获取最近的任务进度列表
      */
@@ -164,11 +162,11 @@ public class CrawlerProgressService {
         // 从ZSet中获取最近的taskKey
         Set<String> taskKeys = redisTemplate.opsForZSet()
                 .reverseRange(RECENT_TASKS_KEY, 0, limit - 1);
-        
+
         if (taskKeys == null || taskKeys.isEmpty()) {
             return new ArrayList<>();
         }
-        
+
         List<CrawlerProgressInfo> result = new ArrayList<>();
         for (String taskKey : taskKeys) {
             CrawlerProgressInfo progress = getProgress(taskKey);
@@ -176,10 +174,10 @@ public class CrawlerProgressService {
                 result.add(progress);
             }
         }
-        
+
         return result;
     }
-    
+
     /**
      * 根据任务类型获取运行中的任务
      */
@@ -187,33 +185,33 @@ public class CrawlerProgressService {
         // 获取所有最近任务
         Set<String> taskKeys = redisTemplate.opsForZSet()
                 .reverseRange(RECENT_TASKS_KEY, 0, -1);
-        
+
         if (taskKeys == null || taskKeys.isEmpty()) {
             return null;
         }
-        
+
         for (String taskKey : taskKeys) {
             CrawlerProgressInfo progress = getProgress(taskKey);
-            if (progress != null && 
-                "RUNNING".equals(progress.getStatus()) && 
-                taskType.equals(progress.getTaskType())) {
+            if (progress != null &&
+                    "RUNNING".equals(progress.getStatus()) &&
+                    taskType.equals(progress.getTaskType())) {
                 return progress;
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * 清理过期的进度记录（Redis会自动过期，此方法用于手动清理ZSet中的无效引用）
      */
     public void cleanExpiredProgress() {
         Set<String> taskKeys = redisTemplate.opsForZSet().range(RECENT_TASKS_KEY, 0, -1);
-        
+
         if (taskKeys == null || taskKeys.isEmpty()) {
             return;
         }
-        
+
         int cleaned = 0;
         for (String taskKey : taskKeys) {
             String key = PROGRESS_KEY_PREFIX + taskKey;
@@ -223,20 +221,20 @@ public class CrawlerProgressService {
                 cleaned++;
             }
         }
-        
+
         if (cleaned > 0) {
             log.info("清理ZSet中过期的任务引用: {} 条", cleaned);
         }
     }
-    
+
     /**
      * 生成任务唯一标识
      */
     private String generateTaskKey(Integer taskType) {
-        return "crawler_" + taskType + "_" + System.currentTimeMillis() + "_" + 
-               UUID.randomUUID().toString().substring(0, 8);
+        return "crawler_" + taskType + "_" + System.currentTimeMillis() + "_" +
+                UUID.randomUUID().toString().substring(0, 8);
     }
-    
+
     /**
      * 获取类型名称（公开方法，供Controller使用）
      */

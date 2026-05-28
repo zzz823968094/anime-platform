@@ -25,12 +25,12 @@ public class CarouselServiceImpl extends ServiceImpl<CarouselMapper, Carousel> i
         if (carousel.getStatus() == null) {
             carousel.setStatus("enabled");
         }
-        
+
         // 如果创建时状态为启用，检查是否已达到最大限制
         if ("enabled".equals(carousel.getStatus())) {
             ensureMaxEnabledLimit();
         }
-        
+
         carousel.setId(IdUtil.nextId());
         carousel.setCreateTime(LocalDateTime.now());
         carousel.setUpdateTime(LocalDateTime.now());
@@ -68,15 +68,15 @@ public class CarouselServiceImpl extends ServiceImpl<CarouselMapper, Carousel> i
         if (carousel == null) {
             throw new BusinessException(404, "轮播图不存在");
         }
-        
+
         // 如果已经是启用状态，直接返回
         if ("enabled".equals(carousel.getStatus())) {
             return;
         }
-        
+
         // 检查并管理最大启用数量限制
         ensureMaxEnabledLimit();
-        
+
         // 启用当前轮播图
         carousel.setStatus("enabled");
         carousel.setUpdateTime(LocalDateTime.now());
@@ -90,12 +90,12 @@ public class CarouselServiceImpl extends ServiceImpl<CarouselMapper, Carousel> i
         if (carousel == null) {
             throw new BusinessException(404, "轮播图不存在");
         }
-        
+
         // 如果已经是禁用状态，直接返回
         if ("disabled".equals(carousel.getStatus())) {
             return;
         }
-        
+
         carousel.setStatus("disabled");
         carousel.setUpdateTime(LocalDateTime.now());
         baseMapper.updateById(carousel);
@@ -109,14 +109,14 @@ public class CarouselServiceImpl extends ServiceImpl<CarouselMapper, Carousel> i
         long enabledCount = lambdaQuery()
                 .eq(Carousel::getStatus, "enabled")
                 .count();
-        
+
         if (enabledCount >= MAX_ENABLED_COUNT) {
             Carousel oldestEnabled = lambdaQuery()
                     .eq(Carousel::getStatus, "enabled")
                     .orderByAsc(Carousel::getUpdateTime)
                     .last("LIMIT 1")
                     .one();
-            
+
             if (oldestEnabled != null) {
                 oldestEnabled.setStatus("disabled");
                 oldestEnabled.setUpdateTime(LocalDateTime.now());

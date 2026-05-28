@@ -30,6 +30,7 @@ public class UserController {
 
     /**
      * 获取当前用户信息
+     *
      * @param userId 用户ID
      * @return 用户信息
      */
@@ -63,7 +64,7 @@ public class UserController {
             @RequestParam(value = "status", required = false) Integer status
     ) {
         log.debug("分页查询普通用户列表，pageNum: {}, pageSize: {}", pageNum, pageSize);
-        
+
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         if (username != null && !username.isBlank()) {
             queryWrapper.like(User::getUsername, username);
@@ -106,16 +107,16 @@ public class UserController {
     @GetMapping("/{id}")
     public Result<User> getById(@PathVariable("id") Long id) {
         log.debug("获取用户详情，id: {}", id);
-        
+
         User user = userService.getById(id);
         if (user == null) {
             log.warn("用户不存在，id: {}", id);
             return Result.fail(CommonConstant.HTTP_STATUS_NOT_FOUND, "用户不存在");
         }
-        
+
         // 清除密码信息，防止敏感数据泄露
         user.setPassword(null);
-        
+
         return Result.ok(user);
     }
 
@@ -136,19 +137,19 @@ public class UserController {
             log.warn("无效的用户状态值: {}, id: {}", status, id);
             return Result.fail(CommonConstant.HTTP_STATUS_PARAM_ERROR, "状态值只能为0或1");
         }
-        
+
         log.info("更新用户状态，id: {}, status: {}", id, status);
-        
+
         User user = new User();
         user.setId(id);
         user.setStatus(status);
-        
+
         boolean success = userService.updateById(user);
         if (!success) {
             log.error("更新用户状态失败，id: {}", id);
             return Result.fail("更新失败");
         }
-        
+
         log.info("用户状态更新成功，id: {}", id);
         return Result.ok();
     }

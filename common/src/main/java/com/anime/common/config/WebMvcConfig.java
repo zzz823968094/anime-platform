@@ -33,25 +33,25 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        
+
         // 允许所有域名跨域（生产环境应指定具体域名）
         config.addAllowedOriginPattern("*");
-        
+
         // 允许所有请求头
         config.addAllowedHeader("*");
-        
+
         // 允许所有请求方法
         config.addAllowedMethod("*");
-        
+
         // 允许携带认证信息
         config.setAllowCredentials(true);
-        
+
         // 预检请求的有效期（秒）
         config.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-        
+
         return new CorsFilter(source);
     }
 
@@ -65,13 +65,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
         MappingJackson2HttpMessageConverter jackson2HttpMessageConverter = new MappingJackson2HttpMessageConverter();
         ObjectMapper objectMapper = new ObjectMapper();
-        
+
         // 创建SimpleModule，添加Long类型的序列化器
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
         simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
         objectMapper.registerModule(simpleModule);
-        
+
         jackson2HttpMessageConverter.setObjectMapper(objectMapper);
         converters.add(jackson2HttpMessageConverter);
     }
