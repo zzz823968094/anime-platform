@@ -112,7 +112,7 @@ public class CronTaskController {
     @PostMapping("/sync/{type}")
     public Result quickSync(@PathVariable("type") int type) {
         if (type != 66 && type != 67 && type != 68) {
-            return Result.fail("不支持的分类 type，只允许 25/26/24");
+            return Result.fail("不支持的分类");
         }
 
         cronTaskService.quickSync(type);

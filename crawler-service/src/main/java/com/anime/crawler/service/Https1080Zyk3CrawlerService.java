@@ -103,6 +103,9 @@ public class Https1080Zyk3CrawlerService {
 
 
     private void doHttpRequest(Boolean isAll, Integer hour, Integer type, Integer page, String taskKey) {
+        if (type != 66 && type != 67 && type != 68) {
+            return;
+        }
         String url;
         if (isAll) {
             url = videoListUrl + "&t=" + type + "&pg=" + page;
