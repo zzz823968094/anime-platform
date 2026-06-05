@@ -29,10 +29,10 @@ public class AsyncConfig {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
         // 核心线程数: 根据CPU核心数设置,IO密集型任务可以适当增加
-        executor.setCorePoolSize(5);
+        executor.setCorePoolSize(2);
 
         // 最大线程数: 核心线程数的2倍
-        executor.setMaxPoolSize(10);
+        executor.setMaxPoolSize(4);
 
         // 队列容量: 缓冲等待执行的任务
         executor.setQueueCapacity(100);
