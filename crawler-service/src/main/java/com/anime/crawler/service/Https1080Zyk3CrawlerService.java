@@ -103,7 +103,7 @@ public class Https1080Zyk3CrawlerService {
 
 
     private void doHttpRequest(Boolean isAll, Integer hour, Integer type, Integer page, String taskKey) {
-        if (type != 66 && type != 67 && type != 68) {
+        if (type == null || (type != 66 && type != 67 && type != 68)) {
             return;
         }
         String url;
@@ -137,7 +137,7 @@ public class Https1080Zyk3CrawlerService {
         processAnimeData(detailJsonArray);
         if (page < pagecount) {
             // 异步递归调用，每一页都提交为独立的异步任务
-            doHttpRequest(isAll, type, hour, page + 1, taskKey);
+            doHttpRequest(isAll, hour, type, page + 1, taskKey);
         }
     }
 
