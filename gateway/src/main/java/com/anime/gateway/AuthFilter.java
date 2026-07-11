@@ -32,7 +32,7 @@ public class AuthFilter implements GlobalFilter, Ordered {
 
     private static final List<String> WHITE_LIST = List.of(
             "/api/image/forward",
-            "/api/danmaku/**",
+            "/api/danmaku/",
             "/api/user/list",
             "/api/user/count",
             "/api/auth/login",
