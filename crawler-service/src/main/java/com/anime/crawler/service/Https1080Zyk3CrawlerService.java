@@ -1,5 +1,6 @@
 package com.anime.crawler.service;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.http.HttpRequest;
@@ -12,6 +13,7 @@ import com.anime.common.utils.IdUtil;
 import com.anime.crawler.config.ProxyConfig;
 import com.anime.crawler.entity.AnimeTable;
 import com.anime.crawler.entity.Video;
+import com.anime.crawler.entity.dto.TodayUpdatedDTO;
 import com.anime.crawler.mapper.AnimeTableMapper;
 import com.anime.crawler.mapper.VideoMapper;
 import lombok.RequiredArgsConstructor;
@@ -175,7 +177,8 @@ public class Https1080Zyk3CrawlerService {
             }
             log.debug("批量查询到 {} 条已存在的动漫记录", existingMap.size());
         }
-
+        // 今日更新的数据
+        List<TodayUpdatedDTO> todayUpdatedList = new ArrayList<>();
         // 第三步：处理每条数据
         for (int i = 0; i < detailJsonArray.size(); i++) {
             JSONObject item = detailJsonArray.getJSONObject(i);
@@ -187,27 +190,34 @@ public class Https1080Zyk3CrawlerService {
 
             // 从内存Map中查找是否已存在（O(1)复杂度）
             AnimeTable existingAnime = vodId != null ? existingMap.get(vodId) : null;
-
+            log.debug("处理动漫数据: {}", animeTable.getVodName());
+            TodayUpdatedDTO todayUpdated = BeanUtil.copyProperties(animeTable, TodayUpdatedDTO.class);
             if (existingAnime != null) {
                 // 存在则使用原有ID，进行更新
                 animeTable.setId(existingAnime.getId());
+                todayUpdated.setStatus(1);
                 updateList.add(animeTable);
             } else {
                 // 不存在则生成新ID，进行插入
                 long newId = IdUtil.nextId();
                 animeTable.setId(newId);
                 insertList.add(animeTable);
+                todayUpdated.setStatus(0);
             }
 
             // 处理视频数据，获取集数
             if (animeTable.getId() != null && vodPlayUrl != null && !vodPlayUrl.isEmpty()) {
                 Integer count = processVideoData(vodPlayUrl, animeTable.getId());
                 animeTable.setVodTotal(count);
+                todayUpdated.setVodTotal(count);
             } else {
                 animeTable.setVodTotal(0);
+                todayUpdated.setVodTotal(0);
             }
+            todayUpdatedList.add(todayUpdated);
         }
-
+        // 存入今日更新数据
+        progressService.todayUpdated(todayUpdatedList);
         // 第四步：批量插入新数据
         batchInsertAnime(insertList);
 

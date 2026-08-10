@@ -1,20 +1,21 @@
 package com.anime.crawler.service;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.anime.crawler.entity.CrawlerProgressInfo;
+import com.anime.crawler.entity.dto.TodayUpdatedDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 基于Redis的爬虫任务进度跟踪服务
@@ -27,9 +28,47 @@ public class CrawlerProgressService {
     // Redis key前缀
     private static final String PROGRESS_KEY_PREFIX = "crawler:progress:";
     private static final String RECENT_TASKS_KEY = "crawler:recent_tasks";
+    private static final String TODAY_UPDATED = "anime:today:updated:";
     // 过期时间：1天
     private static final long EXPIRE_DAYS = 1;
     private final StringRedisTemplate redisTemplate;
+
+    /**
+     * 插入今日已更新的动漫
+     */
+    public void todayUpdated(List<TodayUpdatedDTO> todayUpdatedList){
+        String key = TODAY_UPDATED + DateUtil.today();
+        // 先判断Redis中是否已存在今日更新数据
+        Boolean exists = redisTemplate.hasKey(key);
+        if (Boolean.TRUE.equals(exists)) {
+            // 已存在则读取原有数据，根据vodId合并去重后覆盖
+            String existingJson = redisTemplate.opsForValue().get(key);
+            if (StrUtil.isNotBlank(existingJson)) {
+                List<TodayUpdatedDTO> existingList = JSONUtil.toList(existingJson, TodayUpdatedDTO.class);
+                // 以vodId为key构建Map，新数据覆盖旧数据中相同vodId的记录
+                Map<String, TodayUpdatedDTO> map = existingList.stream()
+                        .collect(Collectors.toMap(TodayUpdatedDTO::getVodId, dto -> dto, (old, newVal) -> newVal, LinkedHashMap::new));
+                for (TodayUpdatedDTO dto : todayUpdatedList) {
+                    map.put(dto.getVodId(), dto);
+                }
+                todayUpdatedList = new ArrayList<>(map.values());
+                log.info("Redis中已存在今日更新数据，根据vodId合并去重后覆盖写入");
+            }
+        }
+        redisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(todayUpdatedList), EXPIRE_DAYS, TimeUnit.DAYS);
+    }
+
+    /**
+     * 获取今日已更新的动漫列表
+     */
+    public List<TodayUpdatedDTO> getTodayUpdated() {
+        String key = TODAY_UPDATED + DateUtil.today();
+        String json = redisTemplate.opsForValue().get(key);
+        if (StrUtil.isBlank(json)) {
+            return new ArrayList<>();
+        }
+        return JSONUtil.toList(json, TodayUpdatedDTO.class);
+    }
 
     /**
      * 创建新的进度跟踪记录
