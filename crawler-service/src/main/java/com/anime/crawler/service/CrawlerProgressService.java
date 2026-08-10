@@ -36,11 +36,11 @@ public class CrawlerProgressService {
     /**
      * 插入今日已更新的动漫
      */
-    public void todayUpdated(List<TodayUpdatedDTO> todayUpdatedList){
+    public void todayUpdated(List<TodayUpdatedDTO> todayUpdatedList) {
         String key = TODAY_UPDATED + DateUtil.today();
         // 先判断Redis中是否已存在今日更新数据
         Boolean exists = redisTemplate.hasKey(key);
-        if (Boolean.TRUE.equals(exists)) {
+        if (exists) {
             // 已存在则读取原有数据，根据vodId合并去重后覆盖
             String existingJson = redisTemplate.opsForValue().get(key);
             if (StrUtil.isNotBlank(existingJson)) {
@@ -52,7 +52,7 @@ public class CrawlerProgressService {
                     map.put(dto.getVodId(), dto);
                 }
                 todayUpdatedList = new ArrayList<>(map.values());
-                log.info("Redis中已存在今日更新数据，根据vodId合并去重后覆盖写入");
+                log.info("redisKey:{} Redis中已存在今日更新数据，根据vodId合并去重后覆盖写入,共{}条数据", key, todayUpdatedList.size());
             }
         }
         redisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(todayUpdatedList), EXPIRE_DAYS, TimeUnit.DAYS);
