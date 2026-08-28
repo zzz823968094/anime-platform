@@ -184,10 +184,10 @@ public class Https1080Zyk3CrawlerService {
             JSONObject item = detailJsonArray.getJSONObject(i);
             String vodPlayUrl = item.getStr("vod_play_url");
             Integer vodId = item.getInt("vod_id");
-
             // 映射动漫数据
             AnimeTable animeTable = mapJsonToAnimeTable(item);
-
+            // 非指定类型不做处理
+            if (animeTable.getTypeId() != 66 && animeTable.getTypeId() != 67 && animeTable.getTypeId() != 68) continue;
             // 从内存Map中查找是否已存在（O(1)复杂度）
             AnimeTable existingAnime = vodId != null ? existingMap.get(vodId) : null;
             log.debug("处理动漫数据: {}", animeTable.getVodName());
